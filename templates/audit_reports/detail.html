@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+
+{% block title %}审计报告详情 - {{ report.report_name }} - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<style>
+    .json-viewer {
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        padding: 15px;
+        font-family: monospace;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .detail-card {
+        margin-bottom: 15px;
+        border-left: 4px solid #6f42c1;
+    }
+    .section-title {
+        color: #495057;
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+    .findings-box {
+        background-color: #f8f9fa;
+        border-left: 4px solid #ffc107;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    .recommendations-box {
+        background-color: #f8f9fa;
+        border-left: 4px solid #28a745;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    .badge-report {
+        font-size: 1rem;
+    }
+    .badge-resource {
+        background-color: #fd7e14;
+    }
+    .badge-task {
+        background-color: #28a745;
+    }
+    .badge-plan {
+        background-color: #6f42c1;
+    }
+    .table-resource {
+        font-size: 0.9rem;
+    }
+    .table-resource th, .table-resource td {
+        padding: 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>审计报告详情</h2>
+        <div>
+            <a href="{{ url_for('audit_reports') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>返回报告列表
+            </a>
+        </div>
+    </div>
+
+    <!-- 报告概览 -->
+    <div class="card detail-card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                {% if report.report_type == '资源调度合规' %}
+                <span class="badge bg-warning badge-report badge-resource">资源调度合规</span>
+                {% elif report.report_type == '任务分配透明度' %}
+                <span class="badge bg-success badge-report badge-task">任务分配透明度</span>
+                {% elif report.report_type == '方案调整合规' %}
+                <span class="badge bg-purple badge-report badge-plan">方案调整合规</span>
+                {% else %}
+                <span class="badge bg-secondary badge-report">{{ report.report_type }}</span>
+                {% endif %}
+                {{ report.report_name }}
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-4">报告ID</dt>
+                        <dd class="col-sm-8">{{ report.report_id }}</dd>
+                        
+                        <dt class="col-sm-4">报告类型</dt>
+                        <dd class="col-sm-8">{{ report.report_type }}</dd>
+                        
+                        <dt class="col-sm-4">审计时间范围</dt>
+                        <dd class="col-sm-8">{{ report.start_date }} 至 {{ report.end_date }}</dd>
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-4">生成时间</dt>
+                        <dd class="col-sm-8">{{ report.generated_at }}</dd>
+                        
+                        <dt class="col-sm-4">生成人</dt>
+                        <dd class="col-sm-8">{{ generated_by_user.username }} ({{ generated_by_user.department }} - {{ generated_by_user.role }})</dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 审计发现和建议 -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card detail-card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-search me-2"></i>审计发现</h5>
+                </div>
+                <div class="card-body">
+                    {% if report.findings %}
+                    <div class="findings-box">
+                        {% for finding in report.findings.split('\n') %}
+                        <p class="mb-2"><i class="fas fa-exclamation-circle me-2 text-warning"></i>{{ finding }}</p>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">本次审计未发现异常问题。</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card detail-card h-100">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>改进建议</h5>
+                </div>
+                <div class="card-body">
+                    {% if report.recommendations %}
+                    <div class="recommendations-box">
+                        {% for recommendation in report.recommendations.split('\n') %}
+                        <p class="mb-2"><i class="fas fa-check-circle me-2 text-success"></i>{{ recommendation }}</p>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">本次审计未提出改进建议。</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 报告详细数据 -->
+    <div class="card detail-card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>审计详细数据</h5>
+        </div>
+        <div class="card-body">
+            {% set report_data = report.report_data|from_json %}
+            
+            {% if report.report_type == '资源调度合规' %}
+                <h6 class="section-title">资源分配总览</h6>
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">资源分配总次数</h5>
+                                <h3>{{ report_data.total_allocations }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">未使用资源数</h5>
+                                <h3 class="{% if report_data.unused_resources|length > 0 %}text-warning{% endif %}">
+                                    {{ report_data.unused_resources|length }}
+                                </h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">高频使用资源数</h5>
+                                <h3 class="{% if report_data.heavily_used_resources|length > 0 %}text-warning{% endif %}">
+                                    {{ report_data.heavily_used_resources|length }}
+                                </h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if report_data.resource_allocations %}
+                <h6 class="section-title">资源使用情况</h6>
+                <div class="table-responsive">
+                    <table class="table table-striped table-resource">
+                        <thead>
+                            <tr>
+                                <th>资源ID</th>
+                                <th>资源名称</th>
+                                <th>分配次数</th>
+                                <th>总分配数量</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for resource in report_data.resource_allocations %}
+                            <tr>
+                                <td>{{ resource.resource_id }}</td>
+                                <td>{{ resource.resource_name }}</td>
+                                <td>{{ resource.allocation_count }}</td>
+                                <td>{{ resource.total_quantity }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+                
+                {% if report_data.unused_resources %}
+                <h6 class="section-title">未使用资源</h6>
+                <div class="table-responsive">
+                    <table class="table table-striped table-resource">
+                        <thead>
+                            <tr>
+                                <th>资源ID</th>
+                                <th>资源名称</th>
+                                <th>资源类型</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for resource in report_data.unused_resources %}
+                            <tr>
+                                <td>{{ resource.id }}</td>
+                                <td>{{ resource.name }}</td>
+                                <td>{{ resource.type }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
+                
+            {% elif report.report_type == '任务分配透明度' %}
+                <h6 class="section-title">任务分配总览</h6>
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">审计任务总数</h5>
+                                <h3>{{ report_data.total_tasks }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title">未分配资源任务数</h5>
+                                <h3 class="{% if report_data.tasks_without_resources|length > 0 %}text-warning{% endif %}">
+                                    {{ report_data.tasks_without_resources|length }}
+                                </h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {% if report_data.task_allocation_data %}
+                <h6 class="section-title">任务资源分配情况</h6>
+                <div class="accordion" id="taskAllocationAccordion">
+                    {% for task in report_data.task_allocation_data %}
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="heading{{ task.task_id }}">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ task.task_id }}" aria-expanded="false" aria-controls="collapse{{ task.task_id }}">
+                                <strong>{{ task.task_name }}</strong> ({{ task.task_type }})
+                                <span class="ms-auto badge {% if task.allocations %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ task.allocations|length }} 个资源
+                                </span>
+                            </button>
+                        </h2>
+                        <div id="collapse{{ task.task_id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ task.task_id }}" data-bs-parent="#taskAllocationAccordion">
+                            <div class="accordion-body">
+                                <p><strong>创建人:</strong> {{ task.created_by_name }}</p>
+                                
+                                {% if task.allocations %}
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>资源ID</th>
+                                                <th>资源名称</th>
+                                                <th>资源类型</th>
+                                                <th>分配数量</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for allocation in task.allocations %}
+                                            <tr>
+                                                <td>{{ allocation.resource_id }}</td>
+                                                <td>{{ allocation.resource_name }}</td>
+                                                <td>{{ allocation.resource_type }}</td>
+                                                <td>{{ allocation.quantity }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {% else %}
+                                <div class="alert alert-warning">
+                                    <p class="mb-0">该任务未分配任何资源</p>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+            {% else %}
+                <!-- 默认以JSON查看器显示详情 -->
+                <h6 class="section-title">原始数据</h6>
+                <div class="json-viewer">
+                    <pre>{{ report.report_data|tojson(indent=4) }}</pre>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %} 

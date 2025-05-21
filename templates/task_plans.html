@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}施工方案 - {{ task.name }} - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ task.name }} - 施工方案</h2>
+    <div>
+        <a href="{{ url_for('new_plan', task_id=task.id) }}" class="btn btn-primary">新建方案</a>
+        <a href="{{ url_for('compare_plans', task_id=task.id) }}" class="btn btn-info text-white">方案对比</a>
+        <a href="{{ url_for('task_detail', task_id=task.id) }}" class="btn btn-secondary">返回任务详情</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-md-6">
+                <h5 class="mb-0">基本信息</h5>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <dl class="row">
+                    <dt class="col-sm-4">任务ID</dt>
+                    <dd class="col-sm-8">{{ task.id }}</dd>
+                    
+                    <dt class="col-sm-4">任务类型</dt>
+                    <dd class="col-sm-8">{{ task.task_type }}</dd>
+                    
+                    <dt class="col-sm-4">位置/区域</dt>
+                    <dd class="col-sm-8">{{ task.location }}</dd>
+                </dl>
+            </div>
+            <div class="col-md-6">
+                <dl class="row">
+                    <dt class="col-sm-4">开始时间</dt>
+                    <dd class="col-sm-8">{{ task.start_time.strftime('%Y-%m-%d %H:%M') if task.start_time else '-' }}</dd>
+                    
+                    <dt class="col-sm-4">结束时间</dt>
+                    <dd class="col-sm-8">{{ task.end_time.strftime('%Y-%m-%d %H:%M') if task.end_time else '-' }}</dd>
+                    
+                    <dt class="col-sm-4">任务状态</dt>
+                    <dd class="col-sm-8">
+                        <span class="task-status status-{{ task.status|lower|replace(' ', '-') }}">
+                            {{ task.status }}
+                        </span>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">施工方案列表</h5>
+    </div>
+    <div class="card-body">
+        {% if plans %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>方案名称</th>
+                        <th>交通影响</th>
+                        <th>预计工期</th>
+                        <th>状态</th>
+                        <th>最后更新</th>
+                        <th>是否选定</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for plan in plans %}
+                    <tr>
+                        <td>{{ plan.name }}</td>
+                        <td>
+                            <span class="badge {% if plan.traffic_impact == '高' %}bg-danger{% elif plan.traffic_impact == '中' %}bg-warning{% else %}bg-success{% endif %}">
+                                {{ plan.traffic_impact }}
+                            </span>
+                        </td>
+                        <td>{{ plan.estimated_duration }} 小时</td>
+                        <td>
+                            <span class="badge {% if plan.status == '草稿' %}bg-secondary{% elif plan.status == '已提交' %}bg-primary{% elif plan.status == '已批准' %}bg-success{% elif plan.status == '已执行' %}bg-info{% else %}bg-dark{% endif %}">
+                                {{ plan.status }}
+                            </span>
+                        </td>
+                        <td>{{ plan.last_updated.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>
+                            {% if plan.is_selected %}
+                            <span class="badge bg-success">已选定</span>
+                            {% else %}
+                            <form action="{{ url_for('select_plan', plan_id=plan.id) }}" method="post" style="display: inline;">
+                                <button type="submit" class="btn btn-sm btn-outline-primary">选为最终方案</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('plan_detail', plan_id=plan.id) }}" class="btn btn-sm btn-primary">查看</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <p class="mb-0">暂无施工方案，请点击"新建方案"按钮创建施工方案。</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

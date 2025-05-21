@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}评分检查记录{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">评分检查记录</h2>
+        <div>
+            <a href="{{ url_for('inspection_detail', inspection_id=inspection.id) }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> 返回检查详情
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- 评分表单 -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-star"></i> 评分表
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info mb-4">
+                        <h5>检查信息</h5>
+                        <p><strong>检查标题：</strong> {{ inspection.title }}</p>
+                        <p><strong>检查类型：</strong> {{ inspection.inspection_type }}</p>
+                        <p><strong>检查日期：</strong> {{ inspection.inspection_date.strftime('%Y-%m-%d %H:%M') }}</p>
+                    </div>
+
+                    <form method="post">
+                        {% set categories = {} %}
+                        {% for c in criteria %}
+                            {% if c.category not in categories %}
+                                {% set _ = categories.update({c.category: []}) %}
+                            {% endif %}
+                            {% set _ = categories[c.category].append(c) %}
+                        {% endfor %}
+
+                        {% for category, category_criteria in categories.items() %}
+                            <div class="card mb-4">
+                                <div class="card-header">
+                                    <h5 class="mb-0">{{ category }}</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 45%">评分项</th>
+                                                    <th style="width: 15%">满分</th>
+                                                    <th style="width: 20%">得分</th>
+                                                    <th style="width: 20%">权重</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for c in category_criteria %}
+                                                    <tr>
+                                                        <td>
+                                                            <input type="hidden" name="criteria_id" value="{{ c.id }}">
+                                                            <div>{{ c.name }}</div>
+                                                            {% if c.description %}
+                                                                <small class="text-muted">{{ c.description }}</small>
+                                                            {% endif %}
+                                                        </td>
+                                                        <td>{{ c.max_score }}</td>
+                                                        <td>
+                                                            <input type="number" class="form-control" name="score" 
+                                                                min="0" max="{{ c.max_score }}" step="0.1" required
+                                                                value="{{ scores[c.id].score if c.id in scores else '' }}">
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-secondary">{{ c.weight }}</span>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td colspan="4">
+                                                            <div class="mb-2">备注</div>
+                                                            <textarea class="form-control" name="comment" rows="2">{{ scores[c.id].comment if c.id in scores else '' }}</textarea>
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                            <button type="reset" class="btn btn-outline-secondary">重置</button>
+                            <button type="submit" class="btn btn-primary">保存评分</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- 检查问题列表 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-exclamation-triangle"></i> 发现的问题
+                </div>
+                <div class="card-body">
+                    {% set issues = inspection.issues | from_json %}
+                    {% if issues and issues|length > 0 %}
+                        <div class="list-group">
+                            {% for issue in issues %}
+                                <div class="list-group-item">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">问题 #{{ loop.index }}</h6>
+                                        {% if issue.severity == '严重' %}
+                                            <span class="badge bg-danger">{{ issue.severity }}</span>
+                                        {% elif issue.severity == '重要' %}
+                                            <span class="badge bg-warning">{{ issue.severity }}</span>
+                                        {% else %}
+                                            <span class="badge bg-info">{{ issue.severity }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <p class="mb-1">{{ issue.description }}</p>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">未发现问题</div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 评分指南 -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-info-circle"></i> 评分指南
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <h6>注意事项</h6>
+                        <ul>
+                            <li>每项评分不得超过满分值</li>
+                            <li>评分请尽量客观公正</li>
+                            <li>考虑问题的严重程度和影响范围</li>
+                            <li>权重越高的项目，对最终得分影响越大</li>
+                        </ul>
+                    </div>
+                    <div class="alert alert-success">
+                        <h6>评分标准参考</h6>
+                        <ul>
+                            <li><strong>9-10分</strong>：完全符合标准要求，表现优异</li>
+                            <li><strong>8-9分</strong>：基本符合标准要求，有少量不足</li>
+                            <li><strong>7-8分</strong>：大部分符合标准要求，有明显不足</li>
+                            <li><strong>6-7分</strong>：勉强符合标准要求，不足较多</li>
+                            <li><strong>6分以下</strong>：不符合标准要求，存在严重问题</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

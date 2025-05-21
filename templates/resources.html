@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}资源管理 - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>资源管理</h2>
+    <a href="{{ url_for('new_resource') }}" class="btn btn-primary">添加资源</a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div class="row">
+            <div class="col-md-6">
+                <input type="text" class="form-control table-search-input" placeholder="搜索资源..." data-table="resources-table">
+            </div>
+            <div class="col-md-6 d-flex justify-content-end">
+                <div class="btn-group" role="group">
+                    <a href="{{ url_for('resources') }}" class="btn btn-outline-primary {% if not request.args.get('type') %}active{% endif %}">全部</a>
+                    <a href="{{ url_for('resources') }}?type=人员" class="btn btn-outline-primary {% if request.args.get('type') == '人员' %}active{% endif %}">人员</a>
+                    <a href="{{ url_for('resources') }}?type=设备" class="btn btn-outline-primary {% if request.args.get('type') == '设备' %}active{% endif %}">设备</a>
+                    <a href="{{ url_for('resources') }}?type=材料" class="btn btn-outline-primary {% if request.args.get('type') == '材料' %}active{% endif %}">材料</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped" id="resources-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>名称</th>
+                        <th>类型</th>
+                        <th>专业技能</th>
+                        <th>状态</th>
+                        <th>位置</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for resource in resources %}
+                    {% if not request.args.get('type') or resource.resource_type == request.args.get('type') %}
+                    <tr>
+                        <td>{{ resource.id }}</td>
+                        <td>{{ resource.name }}</td>
+                        <td>{{ resource.resource_type }}</td>
+                        <td>{{ resource.specialty or '-' }}</td>
+                        <td>
+                            <span class="badge {% if resource.status == '可用' %}bg-success{% elif resource.status == '使用中' %}bg-primary{% else %}bg-warning{% endif %}">
+                                {{ resource.status }}
+                            </span>
+                        </td>
+                        <td>{{ resource.location or '-' }}</td>
+                    </tr>
+                    {% endif %}
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center">暂无资源数据</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %} 

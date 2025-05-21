@@ -1,0 +1,386 @@
+{% extends "base.html" %}
+
+{% block title %}方案调整 - {{ plan.name }} - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<style>
+    .step-card {
+        border-left: 4px solid #0d6efd;
+        margin-bottom: 10px;
+    }
+    .step-card:hover {
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .measure-card {
+        border-left: 4px solid #fd7e14;
+        margin-bottom: 10px;
+    }
+    .sortable-handle {
+        cursor: move;
+    }
+    .drag-placeholder {
+        border: 1px dashed #ccc;
+        margin-bottom: 10px;
+        height: 100px;
+        border-radius: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>调整施工方案: {{ plan.name }}</h2>
+        <div>
+            <a href="{{ url_for('plan_detail', plan_id=plan.id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>返回方案详情
+            </a>
+        </div>
+    </div>
+
+    <!-- 方案基本信息提示 -->
+    <div class="alert alert-info">
+        <div class="row">
+            <div class="col-md-6">
+                <p class="mb-1"><strong>任务名称:</strong> {{ task.name }}</p>
+                <p class="mb-1"><strong>任务类型:</strong> {{ task.task_type }}</p>
+                <p class="mb-0"><strong>任务位置:</strong> {{ task.location }}</p>
+            </div>
+            <div class="col-md-6">
+                <p class="mb-1"><strong>方案名称:</strong> {{ plan.name }}</p>
+                <p class="mb-1"><strong>方案状态:</strong> {{ plan.status }}</p>
+                <p class="mb-0"><strong>预计工期:</strong> {{ plan.estimated_duration }} 小时</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 调整方案表单 -->
+    <form method="post" action="{{ url_for('adjust_plan', plan_id=plan.id) }}">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">调整类型与原因</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="adjustment_type" class="form-label">调整类型</label>
+                        <select id="adjustment_type" name="adjustment_type" class="form-select" required>
+                            <option value="">请选择调整类型</option>
+                            <option value="步骤调整">步骤调整（修改顺序、内容）</option>
+                            <option value="交通措施调整">交通措施调整</option>
+                            <option value="资源调整">资源调整</option>
+                            <option value="时间调整">时间调整</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="adjustment_reason" class="form-label">调整原因</label>
+                        <textarea id="adjustment_reason" name="adjustment_reason" class="form-control" rows="2" required></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 方案基本信息调整 -->
+        <div class="card mb-4 adjustment-section" id="basic-info-section">
+            <div class="card-header">
+                <h5 class="mb-0">方案基本信息调整</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="plan_name" class="form-label">方案名称</label>
+                        <input type="text" class="form-control" id="plan_name" name="plan_name" value="{{ plan.name }}">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="estimated_duration" class="form-label">预计工期(小时)</label>
+                        <input type="number" class="form-control" id="estimated_duration" name="estimated_duration" value="{{ plan.estimated_duration }}">
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="traffic_impact" class="form-label">交通影响程度</label>
+                        <select id="traffic_impact" name="traffic_impact" class="form-select">
+                            <option value="低" {% if plan.traffic_impact == '低' %}selected{% endif %}>低</option>
+                            <option value="中" {% if plan.traffic_impact == '中' %}selected{% endif %}>中</option>
+                            <option value="高" {% if plan.traffic_impact == '高' %}selected{% endif %}>高</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="plan_description" class="form-label">方案描述</label>
+                        <textarea id="plan_description" name="plan_description" class="form-control" rows="2">{{ plan.description }}</textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 步骤调整 -->
+        <div class="card mb-4 adjustment-section" id="steps-section">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">施工步骤调整</h5>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="add-step-btn">
+                    <i class="fas fa-plus me-1"></i>添加步骤
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle me-2"></i>拖动左侧手柄可调整步骤顺序，调整完成后将自动重新计算工期。
+                </div>
+                <div id="steps-container">
+                    {% for step in steps %}
+                    <div class="card step-card" data-step-id="{{ step.id }}">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-auto">
+                                    <div class="sortable-handle">
+                                        <i class="fas fa-grip-vertical text-muted"></i>
+                                    </div>
+                                    <input type="hidden" name="step_order" value="{{ step.id }}">
+                                </div>
+                                <div class="col">
+                                    <div class="row mb-2">
+                                        <div class="col-md-6">
+                                            <label class="form-label">步骤名称</label>
+                                            <input type="text" class="form-control" name="step_name_{{ step.id }}" value="{{ step.name }}">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">工期(小时)</label>
+                                            <input type="number" class="form-control step-duration" name="step_duration_{{ step.id }}" value="{{ step.duration }}">
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label">前置步骤</label>
+                                            <input type="text" class="form-control" name="step_prerequisites_{{ step.id }}" value="{{ step.prerequisites or '' }}" placeholder="步骤ID，用逗号分隔">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <label class="form-label">步骤描述</label>
+                                            <textarea class="form-control" name="step_description_{{ step.id }}" rows="2">{{ step.description }}</textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- 交通措施调整 -->
+        <div class="card mb-4 adjustment-section" id="traffic-section">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">交通组织措施调整</h5>
+                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#addMeasureModal">
+                    <i class="fas fa-plus me-1"></i>添加交通措施
+                </button>
+            </div>
+            <div class="card-body">
+                {% if traffic_measures %}
+                <div id="measures-container">
+                    {% for measure in traffic_measures %}
+                    <div class="card measure-card">
+                        <div class="card-body">
+                            <div class="row mb-2">
+                                <div class="col-md-3">
+                                    <label class="form-label">措施类型</label>
+                                    <input type="text" class="form-control" value="{{ measure.measure_type }}" readonly>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">位置</label>
+                                    <input type="text" class="form-control" value="{{ measure.location }}" readonly>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">开始时间</label>
+                                    <input type="datetime-local" class="form-control" name="measure_start_{{ measure.id }}" value="{{ measure.start_time.strftime('%Y-%m-%dT%H:%M') if measure.start_time else '' }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">结束时间</label>
+                                    <input type="datetime-local" class="form-control" name="measure_end_{{ measure.id }}" value="{{ measure.end_time.strftime('%Y-%m-%dT%H:%M') if measure.end_time else '' }}">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-9">
+                                    <label class="form-label">措施描述</label>
+                                    <textarea class="form-control" name="measure_description_{{ measure.id }}" rows="2">{{ measure.description }}</textarea>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">影响程度</label>
+                                    <select class="form-select" name="measure_impact_{{ measure.id }}">
+                                        <option value="低" {% if measure.impact_level == '低' %}selected{% endif %}>低</option>
+                                        <option value="中" {% if measure.impact_level == '中' %}selected{% endif %}>中</option>
+                                        <option value="高" {% if measure.impact_level == '高' %}selected{% endif %}>高</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <p class="mb-0">该方案暂无交通组织措施，请使用右上角"添加交通措施"按钮添加。</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 提交按钮 -->
+        <div class="text-center mb-4">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-save me-2"></i>保存调整
+            </button>
+        </div>
+    </form>
+
+    <!-- 添加交通措施模态框 -->
+    <div class="modal fade" id="addMeasureModal" tabindex="-1" aria-labelledby="addMeasureModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addMeasureModalLabel">添加交通组织措施</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="new_measure_type" class="form-label">措施类型</label>
+                            <select id="new_measure_type" name="new_measure_type" class="form-select">
+                                <option value="">请选择类型</option>
+                                <option value="交通疏导">交通疏导</option>
+                                <option value="交通管制">交通管制</option>
+                                <option value="临时绕行">临时绕行</option>
+                                <option value="车道封闭">车道封闭</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="new_measure_location" class="form-label">措施位置</label>
+                            <input type="text" id="new_measure_location" name="new_measure_location" class="form-control" placeholder="请输入具体位置">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="new_measure_start" class="form-label">开始时间</label>
+                            <input type="datetime-local" id="new_measure_start" name="new_measure_start" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="new_measure_end" class="form-label">结束时间</label>
+                            <input type="datetime-local" id="new_measure_end" name="new_measure_end" class="form-control">
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-9">
+                            <label for="new_measure_description" class="form-label">措施描述</label>
+                            <textarea id="new_measure_description" name="new_measure_description" class="form-control" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="new_measure_impact" class="form-label">影响程度</label>
+                            <select id="new_measure_impact" name="new_measure_impact" class="form-select">
+                                <option value="低">低</option>
+                                <option value="中">中</option>
+                                <option value="高">高</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="add-measure-confirm">添加措施</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 初始化步骤排序功能
+    new Sortable(document.getElementById('steps-container'), {
+        handle: '.sortable-handle',
+        animation: 150,
+        ghostClass: 'drag-placeholder',
+        onEnd: function(evt) {
+            // 重新排序后更新步骤顺序
+            updateStepOrder();
+        }
+    });
+    
+    // 更新步骤顺序
+    function updateStepOrder() {
+        const stepCards = document.querySelectorAll('.step-card');
+        const stepOrderInputs = document.querySelectorAll('input[name="step_order"]');
+        
+        // 更新步骤顺序的隐藏输入
+        stepOrderInputs.forEach((input, index) => {
+            input.value = stepCards[index].dataset.stepId;
+        });
+    }
+    
+    // 调整类型选择变化时，显示/隐藏相应的调整区域
+    const adjustmentTypeSelect = document.getElementById('adjustment_type');
+    const adjustmentSections = document.querySelectorAll('.adjustment-section');
+    
+    adjustmentTypeSelect.addEventListener('change', function() {
+        const selectedValue = this.value;
+        
+        // 默认隐藏所有部分
+        adjustmentSections.forEach(section => {
+            section.style.display = 'none';
+        });
+        
+        // 根据选择显示相应的调整部分
+        if (selectedValue === '步骤调整') {
+            document.getElementById('steps-section').style.display = 'block';
+        } else if (selectedValue === '交通措施调整') {
+            document.getElementById('traffic-section').style.display = 'block';
+        } else if (selectedValue === '资源调整' || selectedValue === '时间调整') {
+            document.getElementById('basic-info-section').style.display = 'block';
+        }
+    });
+    
+    // 触发一次change事件来初始化显示状态
+    adjustmentTypeSelect.dispatchEvent(new Event('change'));
+    
+    // 计算总工期
+    function calculateTotalDuration() {
+        const durationInputs = document.querySelectorAll('.step-duration');
+        let totalDuration = 0;
+        
+        durationInputs.forEach(input => {
+            totalDuration += parseInt(input.value) || 0;
+        });
+        
+        document.getElementById('estimated_duration').value = totalDuration;
+    }
+    
+    // 监听步骤工期变化
+    document.querySelectorAll('.step-duration').forEach(input => {
+        input.addEventListener('change', calculateTotalDuration);
+    });
+    
+    // 添加交通措施
+    document.getElementById('add-measure-confirm').addEventListener('click', function() {
+        // 检查所有必填字段
+        const type = document.getElementById('new_measure_type').value;
+        const location = document.getElementById('new_measure_location').value;
+        const start = document.getElementById('new_measure_start').value;
+        const end = document.getElementById('new_measure_end').value;
+        
+        if (!type || !location || !start || !end) {
+            alert('请填写所有必填字段');
+            return;
+        }
+        
+        // 关闭模态框
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addMeasureModal'));
+        modal.hide();
+        
+        // 让表单提交时把这些值一起提交
+        document.getElementById('adjustment_type').value = '交通措施调整';
+    });
+});
+</script>
+{% endblock %} 

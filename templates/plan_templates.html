@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}方案模板管理 - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>方案模板管理</h2>
+    <div>
+        <a href="{{ url_for('new_plan_template') }}" class="btn btn-primary">创建新模板</a>
+        <a href="{{ url_for('plans') }}" class="btn btn-info text-white">施工方案管理</a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">返回控制面板</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">方案模板列表</h5>
+    </div>
+    <div class="card-body">
+        {% if templates %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>模板名称</th>
+                        <th>适用任务类型</th>
+                        <th>预设步骤数</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for template in templates %}
+                    <tr>
+                        <td>{{ template.name }}</td>
+                        <td>{{ template.task_type }}</td>
+                        <td>{{ template.steps_count }}</td>
+                        <td>{{ template.created_at }}</td>
+                        <td>
+                            <a href="{{ url_for('plan_template_detail', template_id=template.id) }}" class="btn btn-sm btn-primary">查看</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <p class="mb-0">暂无方案模板，请点击"创建新模板"按钮创建方案模板。</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">模板使用指南</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6>什么是方案模板？</h6>
+                <p>方案模板是预定义的施工方案结构，包含一系列标准化的施工步骤和资源需求。通过模板可以快速创建标准化的施工方案，提高工作效率，减少重复工作。</p>
+            </div>
+            <div class="col-md-6">
+                <h6>如何使用模板？</h6>
+                <ol>
+                    <li>在创建施工方案时选择合适的模板</li>
+                    <li>系统会自动加载模板中的预设步骤</li>
+                    <li>根据实际情况调整和完善方案细节</li>
+                    <li>提交方案进行审批和执行</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

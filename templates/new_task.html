@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}新建任务 - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>新建任务</h2>
+    <a href="{{ url_for('tasks') }}" class="btn btn-secondary">返回任务列表</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="name" class="form-label">任务名称</label>
+                    <input type="text" class="form-control" id="name" name="name" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="task_type" class="form-label">任务类型</label>
+                    <select class="form-select" id="task_type" name="task_type" required>
+                        <option value="">选择类型</option>
+                        <option value="路面保洁">路面保洁</option>
+                        <option value="绿化修剪">绿化修剪</option>
+                        <option value="坑洞修补">坑洞修补</option>
+                        <option value="路面灌缝">路面灌缝</option>
+                        <option value="交安设施维修">交安设施维修</option>
+                        <option value="伸缩缝改造维修">伸缩缝改造维修</option>
+                        <option value="隧道壁清洗">隧道壁清洗</option>
+                        <option value="沥青路面修复">沥青路面修复</option>
+                        <option value="机电设施维护">机电设施维护</option>
+                        <option value="结构物检测">结构物检测</option>
+                        <option value="其他">其他</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="location" class="form-label">位置/区域</label>
+                <input type="text" class="form-control" id="location" name="location" required placeholder="例如：K23+500 - K24+100 主线右侧">
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="latitude" class="form-label">纬度</label>
+                    <input type="number" step="0.000001" class="form-control" id="latitude" name="latitude" placeholder="例如：22.546789">
+                    <small class="text-muted">用于地图精确定位，如：22.546789</small>
+                </div>
+                <div class="col-md-6">
+                    <label for="longitude" class="form-label">经度</label>
+                    <input type="number" step="0.000001" class="form-control" id="longitude" name="longitude" placeholder="例如：113.941234">
+                    <small class="text-muted">用于地图精确定位，如：113.941234</small>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="description" class="form-label">内容描述</label>
+                <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="start_time" class="form-label">开始时间</label>
+                    <input type="datetime-local" class="form-control" id="start_time" name="start_time" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="end_time" class="form-label">结束时间</label>
+                    <input type="datetime-local" class="form-control" id="end_time" name="end_time" required>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="priority" class="form-label">优先级</label>
+                    <select class="form-select" id="priority" name="priority" required>
+                        <option value="">选择优先级</option>
+                        <option value="1">高</option>
+                        <option value="2">中</option>
+                        <option value="3">低</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="traffic_impact" class="form-label">交通影响</label>
+                    <select class="form-select" id="traffic_impact" name="traffic_impact" required>
+                        <option value="">选择交通影响程度</option>
+                        <option value="高">高</option>
+                        <option value="中">中</option>
+                        <option value="低">低</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="submit" class="btn btn-primary">创建任务</button>
+                <a href="{{ url_for('tasks') }}" class="btn btn-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 设置默认日期时间
+    document.addEventListener('DOMContentLoaded', function() {
+        const now = new Date();
+        const startTime = document.getElementById('start_time');
+        const endTime = document.getElementById('end_time');
+        
+        // 格式化当前日期时间为本地ISO格式
+        const startDateTime = new Date(now.getTime());
+        startDateTime.setHours(startDateTime.getHours() + 1);
+        startDateTime.setMinutes(0, 0, 0);
+        
+        const endDateTime = new Date(startDateTime.getTime());
+        endDateTime.setHours(endDateTime.getHours() + 2);
+        
+        startTime.value = formatDateTimeForInput(startDateTime);
+        endTime.value = formatDateTimeForInput(endDateTime);
+    });
+    
+    // 格式化日期时间为input元素所需的格式
+    function formatDateTimeForInput(date) {
+        return date.getFullYear() + '-' + 
+               padZero(date.getMonth() + 1) + '-' + 
+               padZero(date.getDate()) + 'T' + 
+               padZero(date.getHours()) + ':' + 
+               padZero(date.getMinutes());
+    }
+    
+    // 补零函数
+    function padZero(num) {
+        return num < 10 ? '0' + num : num;
+    }
+</script>
+{% endblock %} 

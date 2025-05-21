@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}施工方案管理 - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>施工方案管理</h2>
+    <div>
+        <a href="{{ url_for('plan_templates') }}" class="btn btn-success">方案模板管理</a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">返回控制面板</a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">方案筛选</h5>
+    </div>
+    <div class="card-body">
+        <form id="filter-form" method="get">
+            <div class="row">
+                <div class="col-md-3 mb-3">
+                    <label for="status" class="form-label">方案状态</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">全部状态</option>
+                        <option value="草稿">草稿</option>
+                        <option value="已提交">已提交</option>
+                        <option value="已批准">已批准</option>
+                        <option value="已执行">已执行</option>
+                        <option value="已完成">已完成</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="traffic_impact" class="form-label">交通影响</label>
+                    <select class="form-select" id="traffic_impact" name="traffic_impact">
+                        <option value="">全部影响程度</option>
+                        <option value="低">低</option>
+                        <option value="中">中</option>
+                        <option value="高">高</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="task_type" class="form-label">任务类型</label>
+                    <select class="form-select" id="task_type" name="task_type">
+                        <option value="">全部类型</option>
+                        <option value="道路养护">道路养护</option>
+                        <option value="桥梁维护">桥梁维护</option>
+                        <option value="隧道维护">隧道维护</option>
+                        <option value="绿化养护">绿化养护</option>
+                        <option value="设施维护">设施维护</option>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">筛选</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">施工方案列表</h5>
+    </div>
+    <div class="card-body">
+        {% if plans %}
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>方案名称</th>
+                        <th>关联任务</th>
+                        <th>任务类型</th>
+                        <th>位置/区域</th>
+                        <th>交通影响</th>
+                        <th>预计工期</th>
+                        <th>状态</th>
+                        <th>是否选定</th>
+                        <th>最后更新</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for plan in plans %}
+                    <tr>
+                        <td>{{ plan.name }}</td>
+                        <td>{{ plan.task_name }}</td>
+                        <td>{{ plan.task_type }}</td>
+                        <td>{{ plan.task_location }}</td>
+                        <td>
+                            <span class="badge {% if plan.traffic_impact == '高' %}bg-danger{% elif plan.traffic_impact == '中' %}bg-warning{% else %}bg-success{% endif %}">
+                                {{ plan.traffic_impact }}
+                            </span>
+                        </td>
+                        <td>{{ plan.estimated_duration }} 小时</td>
+                        <td>
+                            <span class="badge {% if plan.status == '草稿' %}bg-secondary{% elif plan.status == '已提交' %}bg-primary{% elif plan.status == '已批准' %}bg-success{% elif plan.status == '已执行' %}bg-info{% else %}bg-dark{% endif %}">
+                                {{ plan.status }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if plan.is_selected %}
+                            <span class="badge bg-success">已选定</span>
+                            {% else %}
+                            <span class="badge bg-light text-dark">未选定</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ plan.last_updated }}</td>
+                        <td>
+                            <a href="{{ url_for('plan_detail', plan_id=plan.id) }}" class="btn btn-sm btn-primary">查看</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            <p class="mb-0">暂无施工方案数据。</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">方案生成指引</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6>如何创建施工方案？</h6>
+                <ol>
+                    <li>进入相关任务详情页</li>
+                    <li>点击"施工方案"按钮</li>
+                    <li>在方案列表页点击"新建方案"</li>
+                    <li>填写方案信息并提交</li>
+                    <li>添加施工步骤</li>
+                    <li>更新方案状态</li>
+                </ol>
+            </div>
+            <div class="col-md-6">
+                <h6>方案模板使用</h6>
+                <p>使用方案模板可以快速生成包含预设步骤的施工方案，提高工作效率。</p>
+                <a href="{{ url_for('plan_templates') }}" class="btn btn-outline-primary">管理方案模板</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 获取URL参数，用于筛选表单的初始值
+        const urlParams = new URLSearchParams(window.location.search);
+        const status = urlParams.get('status');
+        const trafficImpact = urlParams.get('traffic_impact');
+        const taskType = urlParams.get('task_type');
+        
+        // 设置筛选表单的初始值
+        if (status) document.getElementById('status').value = status;
+        if (trafficImpact) document.getElementById('traffic_impact').value = trafficImpact;
+        if (taskType) document.getElementById('task_type').value = taskType;
+    });
+</script>
+{% endblock %} 

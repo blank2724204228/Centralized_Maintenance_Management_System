@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% block title %}选择任务进行三维可视化 - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>选择任务进行三维可视化</h2>
+        <div>
+            <a href="{{ url_for('visualization_dashboard') }}" class="btn btn-secondary">返回可视化展示</a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">可视化任务列表</h5>
+        </div>
+        <div class="card-body">
+            {% if tasks %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>任务名称</th>
+                            <th>位置/区域</th>
+                            <th>任务类型</th>
+                            <th>状态</th>
+                            <th>开始时间</th>
+                            <th>结束时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in tasks %}
+                        <tr>
+                            <td>{{ task.name }}</td>
+                            <td>{{ task.location }}</td>
+                            <td>{{ task.task_type }}</td>
+                            <td>
+                                <span class="badge {% if task.status == '待处理' %}bg-warning{% elif task.status == '进行中' %}bg-primary{% elif task.status == '已完成' %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {{ task.status }}
+                                </span>
+                            </td>
+                            <td>{{ task.start_time.strftime('%Y-%m-%d %H:%M') if task.start_time else '-' }}</td>
+                            <td>{{ task.end_time.strftime('%Y-%m-%d %H:%M') if task.end_time else '-' }}</td>
+                            <td>
+                                <a href="{{ url_for('visualization_3d', task_id=task.id) }}" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-cube me-1"></i>3D可视化
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <p class="mb-0">暂无可用于三维可视化的任务。</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">三维可视化说明</h5>
+                </div>
+                <div class="card-body">
+                    <p>三维可视化功能可以帮助您直观地理解施工计划和步骤:</p>
+                    <ul>
+                        <li>以立体方式展示施工场景和流程</li>
+                        <li>可模拟各施工步骤的执行过程</li>
+                        <li>提供多角度视图，全方位了解施工细节</li>
+                        <li>直观展示交通影响范围</li>
+                    </ul>
+                    <p>请从上方列表选择一个任务进行三维可视化。</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">支持的任务类型</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <h6>道路养护</h6>
+                                <p class="text-muted small">包含路面修补、路标更新等道路维护任务</p>
+                            </div>
+                            <div class="mb-3">
+                                <h6>桥梁维护</h6>
+                                <p class="text-muted small">展示桥梁结构与维修工作细节</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <h6>隧道维护</h6>
+                                <p class="text-muted small">清洗、照明维修等隧道内作业可视化</p>
+                            </div>
+                            <div class="mb-3">
+                                <h6>设施维护</h6>
+                                <p class="text-muted small">路灯、标识牌等设施的维护工作</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+{% endblock %} 

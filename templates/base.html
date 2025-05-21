@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}高速公路集中养护智能管理系统{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --primary-light: #eef5ff;
+            --secondary-color: #6c757d;
+            --success-color: #198754;
+            --info-color: #0dcaf0;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 0.8rem 1rem;
+        }
+        
+        .navbar-brand {
+            font-weight: 600;
+            font-size: 1.3rem;
+        }
+        
+        .navbar-nav .nav-link {
+            padding: 0.5rem 1rem;
+            margin: 0 0.2rem;
+            border-radius: 4px;
+            transition: all 0.3s;
+        }
+        
+        .navbar-nav .nav-link:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s, box-shadow 0.3s;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card-header {
+            background-color: #fff;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+            font-weight: 600;
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .card-header i {
+            margin-right: 0.7rem;
+            color: var(--primary-color);
+        }
+        
+        .card-body {
+            padding: 1.5rem;
+        }
+        
+        .btn {
+            border-radius: 6px;
+            padding: 0.5rem 1.2rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-outline-primary {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-outline-primary:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+        
+        .table {
+            --bs-table-bg: transparent;
+            --bs-table-striped-bg: var(--primary-light);
+            --bs-table-hover-bg: rgba(13, 110, 253, 0.05);
+        }
+        
+        .badge {
+            padding: 0.45em 0.8em;
+            font-weight: 500;
+            border-radius: 4px;
+        }
+        
+        .form-control, .form-select {
+            border-radius: 6px;
+            padding: 0.6rem 1rem;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.1);
+        }
+        
+        .page-footer {
+            background-color: #fff;
+            border-top: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 1.5rem 0;
+            margin-top: 3rem;
+        }
+        
+        /* Improved responsive navs */
+        @media (max-width: 992px) {
+            .navbar-nav .nav-link {
+                margin: 0.2rem 0;
+            }
+        }
+        
+        /* 返回按钮样式 */
+        #back-button .btn {
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        #back-button .btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+    </style>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('index') }}">
+                <i class="fas fa-road me-2"></i>集中养护智能管理系统
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-th-large me-1"></i>系统模块
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="navbarDropdown">
+                            {% for link in nav_links %}
+                            <li><a class="dropdown-item" href="{{ link.url }}">{{ link.name }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('logout') }}">
+                            <i class="fas fa-sign-out-alt me-1"></i>退出
+                        </a>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('login') }}">
+                            <i class="fas fa-sign-in-alt me-1"></i>登录
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- 返回按钮 -->
+    <div id="back-button" class="position-fixed" style="bottom: 30px; right: 30px; z-index: 1000; display: none;">
+        <button class="btn btn-primary rounded-circle d-flex align-items-center justify-content-center" onclick="goBack()" title="返回上一页" style="width: 50px; height: 50px;">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+    </div>
+    
+    <div class="container py-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category if category != '_' else 'info' }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+        
+        {% block content %}{% endblock %}
+    </div>
+    
+    <footer class="page-footer text-center">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <p class="mb-0 text-muted">© 2025 高速公路集中养护智能管理系统 | 版权所有</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    // 通用脚本
+    document.addEventListener('DOMContentLoaded', function() {
+        // 使警告框自动关闭
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            setTimeout(() => {
+                const closeButton = alert.querySelector('.btn-close');
+                if (closeButton) closeButton.click();
+            }, 5000);
+        });
+        
+        // 高亮当前活跃导航项
+        const currentPath = window.location.pathname;
+        const navLinks = document.querySelectorAll('.dropdown-item');
+        navLinks.forEach(link => {
+            if (link.getAttribute('href') === currentPath) {
+                link.classList.add('active');
+                link.classList.add('bg-primary');
+                link.classList.add('text-white');
+            }
+        });
+        
+        // 控制返回按钮的显示
+        const backButton = document.getElementById('back-button');
+        // 如果不是首页或登录页则显示返回按钮
+        if (currentPath !== '/' && currentPath !== '/login' && currentPath !== '/index') {
+            backButton.style.display = 'block';
+        }
+    });
+    
+    // 返回上一页函数
+    function goBack() {
+        window.history.back();
+    }
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html> 

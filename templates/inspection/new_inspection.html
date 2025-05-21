@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}新建检查记录{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">新建检查记录</h2>
+        <div>
+            <a href="{{ url_for('inspection_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> 返回列表
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-clipboard-check"></i> 检查信息
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">检查标题 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="inspection_type" class="form-label">检查类型 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="inspection_type" name="inspection_type" required>
+                                <option value="" selected disabled>选择检查类型</option>
+                                <option value="施工单位内部">施工单位内部</option>
+                                <option value="监理单位">监理单位</option>
+                                <option value="其他单位">其他单位</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="task_id" class="form-label">相关任务 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="task_id" name="task_id" required>
+                                <option value="" selected disabled>选择关联任务</option>
+                                {% for task in tasks %}
+                                    <option value="{{ task.id }}">{{ task.name }} ({{ task.task_type }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="location" class="form-label">检查地点 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="location" name="location" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="inspection_date" class="form-label">检查日期时间 <span class="text-danger">*</span></label>
+                            <input type="datetime-local" class="form-control" id="inspection_date" name="inspection_date" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="content" class="form-label">检查内容</label>
+                    <textarea class="form-control" id="content" name="content" rows="5" placeholder="详细描述检查的内容、检查过程等..."></textarea>
+                </div>
+
+                <hr>
+                <h5 class="mb-3">发现的问题</h5>
+                <div id="issues-container">
+                    <div class="issue-item row mb-3">
+                        <div class="col-md-8">
+                            <label class="form-label">问题描述</label>
+                            <input type="text" class="form-control" name="issue_description" placeholder="描述发现的问题">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">严重程度</label>
+                            <select class="form-select" name="issue_severity">
+                                <option value="一般">一般</option>
+                                <option value="重要">重要</option>
+                                <option value="严重">严重</option>
+                            </select>
+                        </div>
+                        <div class="col-md-1 d-flex align-items-end">
+                            <button type="button" class="btn btn-danger remove-issue" style="display: none;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <button type="button" id="add-issue" class="btn btn-outline-primary">
+                        <i class="fas fa-plus"></i> 添加问题
+                    </button>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <button type="reset" class="btn btn-outline-secondary">重置</button>
+                    <button type="submit" class="btn btn-primary">提交检查记录</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 自动设置默认检查日期为当前时间
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    
+    document.getElementById('inspection_date').value = `${year}-${month}-${day}T${hours}:${minutes}`;
+    
+    // 问题项管理
+    const issuesContainer = document.getElementById('issues-container');
+    const addIssueButton = document.getElementById('add-issue');
+    
+    // 添加问题
+    addIssueButton.addEventListener('click', function() {
+        const issueTemplate = document.querySelector('.issue-item').cloneNode(true);
+        issueTemplate.querySelector('input[name="issue_description"]').value = '';
+        issueTemplate.querySelector('select[name="issue_severity"]').value = '一般';
+        issueTemplate.querySelector('.remove-issue').style.display = 'block';
+        issuesContainer.appendChild(issueTemplate);
+        
+        // 添加删除按钮事件
+        attachRemoveEvents();
+    });
+    
+    // 删除问题项
+    function attachRemoveEvents() {
+        document.querySelectorAll('.remove-issue').forEach(button => {
+            button.addEventListener('click', function() {
+                if (issuesContainer.children.length > 1) {
+                    this.closest('.issue-item').remove();
+                }
+            });
+        });
+    }
+    
+    // 初始化删除按钮事件
+    attachRemoveEvents();
+});
+</script>
+{% endblock %} 

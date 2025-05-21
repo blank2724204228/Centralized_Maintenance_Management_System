@@ -1,0 +1,312 @@
+{% extends "base.html" %}
+
+{% block title %}高速公路集中养护智能管理系统{% endblock %}
+
+{% block head %}
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, #0d6efd 0%, #084298 100%);
+        color: white;
+        padding: 6rem 0;
+        border-radius: 15px;
+        margin-bottom: 3rem;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .hero-section::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        z-index: 0;
+    }
+    
+    .hero-content {
+        position: relative;
+        z-index: 1;
+    }
+    
+    .hero-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+    }
+    
+    .hero-text {
+        font-size: 1.2rem;
+        margin-bottom: 2rem;
+        max-width: 800px;
+    }
+    
+    .feature-card {
+        transition: all 0.3s;
+        border: none;
+        border-radius: 10px;
+        overflow: hidden;
+        height: 100%;
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    }
+    
+    .feature-icon-wrapper {
+        height: 100px;
+        width: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--primary-light);
+        border-radius: 50%;
+        margin: 0 auto 1.5rem auto;
+    }
+    
+    .feature-icon {
+        font-size: 2.5rem;
+        color: var(--primary-color);
+    }
+    
+    .section-title {
+        position: relative;
+        margin-bottom: 3rem;
+        font-weight: 700;
+    }
+    
+    .section-title::after {
+        content: '';
+        position: absolute;
+        left: 0;
+        bottom: -15px;
+        width: 50px;
+        height: 4px;
+        background-color: var(--primary-color);
+        border-radius: 2px;
+    }
+    
+    .stat-card {
+        padding: 2rem;
+        text-align: center;
+        background-color: white;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    }
+    
+    .stat-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-title {
+        font-size: 1rem;
+        color: var(--secondary-color);
+    }
+    
+    .cta-section {
+        background-color: var(--primary-light);
+        padding: 4rem 0;
+        border-radius: 15px;
+        margin: 4rem 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- 英雄部分 -->
+<div class="hero-section shadow">
+    <div class="container hero-content">
+        <div class="row">
+            <div class="col-lg-8">
+                <h1 class="hero-title">欢迎使用高速公路集中养护智能管理系统</h1>
+                <p class="hero-text">本系统旨在提高养护工作效率、工作质量和服务水平，通过集中养护方案实现养护工作的数字化、自动化和智能化管理。</p>
+                <div class="d-flex gap-3">
+                    {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-light btn-lg">
+                        <i class="fas fa-tachometer-alt me-2"></i>进入控制面板
+                    </a>
+                    {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-light btn-lg">
+                        <i class="fas fa-sign-in-alt me-2"></i>登录系统
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-4 d-none d-lg-block text-center">
+                <img src="{{ url_for('static', filename='images/highway-illustration.svg') }}" alt="高速公路插图" class="img-fluid" onerror="this.style.display='none'">
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 系统特点部分 -->
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="section-title">系统特点</h2>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <div class="col-md-6 col-lg-3">
+            <div class="feature-card card shadow-sm p-4">
+                <div class="feature-icon-wrapper">
+                    <i class="fas fa-road feature-icon"></i>
+                </div>
+                <div class="card-body text-center">
+                    <h5 class="card-title">集中养护方案</h5>
+                    <p class="card-text">通过监查、报修、集中养护方案、报备、审批、跟踪的全过程监管，高能工作的数字化。</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="feature-card card shadow-sm p-4">
+                <div class="feature-icon-wrapper">
+                    <i class="fas fa-chart-line feature-icon"></i>
+                </div>
+                <div class="card-body text-center">
+                    <h5 class="card-title">数据分析</h5>
+                    <p class="card-text">通过大数据分析和智能化决策，将多个养护项目集中安排，减少对交通的影响。</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="feature-card card shadow-sm p-4">
+                <div class="feature-icon-wrapper">
+                    <i class="fas fa-tasks feature-icon"></i>
+                </div>
+                <div class="card-body text-center">
+                    <h5 class="card-title">任务管理</h5>
+                    <p class="card-text">集中管理养护任务，包括自动化批准养护工单、手动录入任务、任务分类等功能。</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="feature-card card shadow-sm p-4">
+                <div class="feature-icon-wrapper">
+                    <i class="fas fa-shield-alt feature-icon"></i>
+                </div>
+                <div class="card-body text-center">
+                    <h5 class="card-title">安全保障</h5>
+                    <p class="card-text">提升养护工作的管理和执行能力，确保养护工作的高效、安全进行。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 统计数据部分 -->
+<div class="container mt-5">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="section-title">系统概览</h2>
+        </div>
+    </div>
+    
+    <div class="row g-4">
+        <div class="col-md-6 col-lg-3">
+            <div class="stat-card">
+                <i class="fas fa-project-diagram mb-3 text-primary fa-3x"></i>
+                <div class="stat-number" id="stat-tasks">100+</div>
+                <div class="stat-title">管理任务数</div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="stat-card">
+                <i class="fas fa-tools mb-3 text-primary fa-3x"></i>
+                <div class="stat-number" id="stat-resources">50+</div>
+                <div class="stat-title">资源数量</div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="stat-card">
+                <i class="fas fa-file-alt mb-3 text-primary fa-3x"></i>
+                <div class="stat-number" id="stat-plans">75+</div>
+                <div class="stat-title">施工方案</div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="stat-card">
+                <i class="fas fa-users mb-3 text-primary fa-3x"></i>
+                <div class="stat-number" id="stat-users">20+</div>
+                <div class="stat-title">系统用户</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 号召性用语部分 -->
+<div class="cta-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <h3>通过集中养护方案实现养护工作的数字化、自动化和智能化管理</h3>
+                <p class="mb-0">提升养护工作的管理和执行能力，确保养护工作的高效、安全进行。</p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                {% if current_user.is_authenticated %}
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg">进入控制面板</a>
+                {% else %}
+                <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">立即登录</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 简单的数字增长动画
+    function animateStats(elementId, endValue) {
+        const element = document.getElementById(elementId);
+        const duration = 2000; // 2秒
+        const startTime = Date.now();
+        const startValue = 0;
+        
+        function updateNumber() {
+            const currentTime = Date.now();
+            const elapsed = currentTime - startTime;
+            
+            if (elapsed < duration) {
+                const value = Math.round(startValue + (endValue - startValue) * (elapsed / duration));
+                element.textContent = value + '+';
+                requestAnimationFrame(updateNumber);
+            } else {
+                element.textContent = endValue + '+';
+            }
+        }
+        
+        updateNumber();
+    }
+    
+    // 当元素进入视口时启动动画
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateStats('stat-tasks', 125);
+                animateStats('stat-resources', 57);
+                animateStats('stat-plans', 89);
+                animateStats('stat-users', 32);
+                observer.disconnect();
+            }
+        });
+    });
+    
+    observer.observe(document.querySelector('.stat-card'));
+});
+</script>
+{% endblock %} 

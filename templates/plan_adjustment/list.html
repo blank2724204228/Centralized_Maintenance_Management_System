@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}方案调整记录 - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<style>
+    .adjustment-card {
+        transition: all 0.2s ease;
+        border-left: 4px solid #fd7e14;
+    }
+    .adjustment-card:hover {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        transform: translateY(-2px);
+    }
+    .badge-adjustment {
+        font-size: 0.8rem;
+    }
+    .badge-steps {
+        background-color: #0d6efd;
+    }
+    .badge-traffic {
+        background-color: #fd7e14;
+    }
+    .badge-resource {
+        background-color: #20c997;
+    }
+    .badge-time {
+        background-color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>方案调整记录</h2>
+        <div>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>返回控制面板
+            </a>
+        </div>
+    </div>
+
+    <!-- 调整记录列表 -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <div class="row">
+                <div class="col-md-8">
+                    <h5 class="mb-0">所有调整记录</h5>
+                </div>
+                <div class="col-md-4">
+                    <input type="text" class="form-control" id="searchInput" placeholder="搜索调整记录...">
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if adjustments %}
+            <div class="list-group">
+                {% for adjustment in adjustments %}
+                <div class="adjustment-card list-group-item list-group-item-action mb-2">
+                    <div class="d-flex w-100 justify-content-between align-items-center">
+                        <h5 class="mb-1">
+                            {% if adjustment.adjustment_type == '步骤调整' %}
+                            <span class="badge bg-primary badge-adjustment badge-steps">步骤调整</span>
+                            {% elif adjustment.adjustment_type == '交通措施调整' %}
+                            <span class="badge bg-warning badge-adjustment badge-traffic">交通措施调整</span>
+                            {% elif adjustment.adjustment_type == '资源调整' %}
+                            <span class="badge bg-success badge-adjustment badge-resource">资源调整</span>
+                            {% elif adjustment.adjustment_type == '时间调整' %}
+                            <span class="badge bg-secondary badge-adjustment badge-time">时间调整</span>
+                            {% endif %}
+                            {{ adjustment.plan_name }}
+                        </h5>
+                        <small class="text-muted">{{ adjustment.adjusted_at }}</small>
+                    </div>
+                    <div class="d-flex w-100 justify-content-between">
+                        <p class="mb-1">
+                            <strong>相关任务:</strong> {{ adjustment.task_name }}<br>
+                            <strong>调整原因:</strong> {{ adjustment.adjustment_reason }}
+                        </p>
+                        <div>
+                            <a href="{{ url_for('view_adjustment', plan_id=adjustment.plan_id, adjustment_id=adjustment.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye me-1"></i>查看详情
+                            </a>
+                            <a href="{{ url_for('plan_detail', plan_id=adjustment.plan_id) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-file-alt me-1"></i>查看方案
+                            </a>
+                        </div>
+                    </div>
+                    <div class="d-flex w-100 justify-content-between mt-2">
+                        <small class="text-muted">调整人: {{ adjustment.adjusted_by_name }}</small>
+                        <div>
+                            {% set impact = adjustment.impact_assessment|from_json %}
+                            {% if impact.duration_change is defined %}
+                                {% if impact.duration_change > 0 %}
+                                <span class="badge bg-danger">工期+{{ impact.duration_change }}h</span>
+                                {% elif impact.duration_change < 0 %}
+                                <span class="badge bg-success">工期{{ impact.duration_change }}h</span>
+                                {% endif %}
+                            {% endif %}
+                            
+                            {% if impact.traffic_impact_change is defined %}
+                                {% if impact.traffic_impact_change > 0 %}
+                                <span class="badge bg-danger">交通影响增加</span>
+                                {% elif impact.traffic_impact_change < 0 %}
+                                <span class="badge bg-success">交通影响减少</span>
+                                {% endif %}
+                            {% endif %}
+                            
+                            {% if impact.steps_count_change is defined and impact.steps_count_change != 0 %}
+                                {% if impact.steps_count_change > 0 %}
+                                <span class="badge bg-primary">新增{{ impact.steps_count_change }}步骤</span>
+                                {% elif impact.steps_count_change < 0 %}
+                                <span class="badge bg-warning">减少{{ -impact.steps_count_change }}步骤</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <p class="mb-0">暂无方案调整记录。您可以通过进入方案详情页面，点击"方案调整"按钮进行方案调整。</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 搜索功能
+    const searchInput = document.getElementById('searchInput');
+    const adjustmentCards = document.querySelectorAll('.adjustment-card');
+    
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        
+        adjustmentCards.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

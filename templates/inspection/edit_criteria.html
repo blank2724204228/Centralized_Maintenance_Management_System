@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+
+{% block title %}编辑评分标准{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">编辑评分标准</h2>
+        <div>
+            <a href="{{ url_for('criteria_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> 返回列表
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-edit"></i> 评分标准信息
+        </div>
+        <div class="card-body">
+            <form method="post">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">标准名称 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="name" name="name" value="{{ criteria.name }}" required>
+                            <div class="form-text">评分标准项的名称，例如：安全防护设施完善度、文明施工标志设置等</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="category" class="form-label">所属类别 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="category" name="category" value="{{ criteria.category }}" required list="category-list">
+                            <datalist id="category-list">
+                                <option value="施工进度">
+                                <option value="施工质量">
+                                <option value="安全管理">
+                                <option value="文明施工">
+                                <option value="环境保护">
+                                <option value="资料管理">
+                            </datalist>
+                            <div class="form-text">标准所属的类别，可以选择已有类别或输入新类别</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="max_score" class="form-label">满分值 <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="max_score" name="max_score" min="0" step="0.1" value="{{ criteria.max_score }}" required>
+                            <div class="form-text">该评分项的满分值</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="weight" class="form-label">权重 <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="weight" name="weight" min="0.1" step="0.1" value="{{ criteria.weight }}" required>
+                            <div class="form-text">该评分项的权重，用于计算加权总分</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">详细描述</label>
+                    <textarea class="form-control" id="description" name="description" rows="4" placeholder="详细描述该评分标准的具体要求和评分依据...">{{ criteria.description }}</textarea>
+                </div>
+
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="is_active" name="is_active" {% if criteria.is_active %}checked{% endif %}>
+                    <label class="form-check-label" for="is_active">启用该标准</label>
+                    <div class="form-text">勾选表示该标准可用于评分，不勾选表示暂时停用</div>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <button type="reset" class="btn btn-outline-secondary">重置</button>
+                    <button type="submit" class="btn btn-primary">保存更改</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

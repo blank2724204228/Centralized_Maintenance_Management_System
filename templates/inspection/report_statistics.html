@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+
+{% block title %}考核报告统计分析{% endblock %}
+
+{% block styles %}
+<style>
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+        margin-bottom: 20px;
+    }
+    
+    .stat-card {
+        border-radius: 10px;
+        overflow: hidden;
+        transition: transform 0.3s;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .grade-indicator {
+        width: 15px;
+        height: 15px;
+        display: inline-block;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">考核报告统计分析</h2>
+        <div>
+            <a href="{{ url_for('report_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> 返回报告列表
+            </a>
+        </div>
+    </div>
+
+    <!-- 筛选条件 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-filter"></i> 筛选条件
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="task_type" class="form-label">任务类型</label>
+                    <select name="task_type" id="task_type" class="form-select">
+                        <option value="">全部类型</option>
+                        {% for type in task_types %}
+                            <option value="{{ type }}" {% if current_filters.task_type == type %}selected{% endif %}>{{ type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="period" class="form-label">统计周期</label>
+                    <select name="period" id="period" class="form-select">
+                        <option value="monthly" {% if current_filters.period == 'monthly' %}selected{% endif %}>按月</option>
+                        <option value="quarterly" {% if current_filters.period == 'quarterly' %}selected{% endif %}>按季度</option>
+                        <option value="yearly" {% if current_filters.period == 'yearly' %}selected{% endif %}>按年</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="year" class="form-label">年份</label>
+                    <select name="year" id="year" class="form-select">
+                        {% for y in years %}
+                            <option value="{{ y }}" {% if current_filters.year == y %}selected{% endif %}>{{ y }}年</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">应用筛选</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 统计图表 -->
+    <div class="row">
+        <!-- 平均得分趋势 -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-chart-line"></i> 平均得分趋势
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="scoreChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 等级分布 -->
+        <div class="col-lg-4">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-chart-pie"></i> 等级分布
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="gradeChart"></canvas>
+                    </div>
+                    <div class="mt-3">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>等级</th>
+                                    <th>数量</th>
+                                    <th>占比</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for grade, data in stats_data.grade_distribution.items() %}
+                                    <tr>
+                                        <td>
+                                            <div class="grade-indicator" style="background-color: 
+                                                {% if grade == '优秀' %}#198754
+                                                {% elif grade == '良好' %}#0d6efd
+                                                {% elif grade == '合格' %}#ffc107
+                                                {% else %}#dc3545{% endif %};"></div>
+                                            {{ grade }}
+                                        </td>
+                                        <td>{{ data.count }}</td>
+                                        <td>{{ data.percentage }}%</td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- 类别平均分 -->
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-chart-bar"></i> 各类别平均得分率
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 报告数量统计 -->
+        <div class="col-lg-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-file-alt"></i> 报告数量统计
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="countChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 类别分数卡片 -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <i class="fas fa-list-alt"></i> 各考核类别详情
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% for category, score in stats_data.category_averages.items() %}
+                    <div class="col-md-3 mb-3">
+                        <div class="card stat-card h-100 
+                            {% if score >= 90 %}
+                                border-success
+                            {% elif score >= 75 %}
+                                border-primary
+                            {% elif score >= 60 %}
+                                border-warning
+                            {% else %}
+                                border-danger
+                            {% endif %}">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">{{ category }}</h5>
+                                <h3 class="mb-0 
+                                    {% if score >= 90 %}
+                                        text-success
+                                    {% elif score >= 75 %}
+                                        text-primary
+                                    {% elif score >= 60 %}
+                                        text-warning
+                                    {% else %}
+                                        text-danger
+                                    {% endif %}">
+                                    {{ score }}%
+                                </h3>
+                                <div class="progress mt-2">
+                                    <div class="progress-bar 
+                                        {% if score >= 90 %}
+                                            bg-success
+                                        {% elif score >= 75 %}
+                                            bg-primary
+                                        {% elif score >= 60 %}
+                                            bg-warning
+                                        {% else %}
+                                            bg-danger
+                                        {% endif %}" 
+                                        role="progressbar" 
+                                        style="width: {{ score }}%" 
+                                        aria-valuenow="{{ score }}" 
+                                        aria-valuemin="0" 
+                                        aria-valuemax="100">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 设置统一的图表配置
+    Chart.defaults.font.family = "'Helvetica Neue', 'Helvetica', 'Arial', sans-serif";
+    Chart.defaults.color = '#666';
+    
+    // 平均得分趋势图
+    const scoreCtx = document.getElementById('scoreChart').getContext('2d');
+    const scoreChart = new Chart(scoreCtx, {
+        type: 'line',
+        data: {
+            labels: {{ stats_data.labels|tojson }},
+            datasets: [{
+                label: '平均得分',
+                data: {{ stats_data.scores|tojson }},
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 2,
+                pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                tension: 0.2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    min: Math.max(0, Math.min(...{{ stats_data.scores|tojson }}) - 1),
+                    max: Math.min(10, Math.max(...{{ stats_data.scores|tojson }}) + 1),
+                    title: {
+                        display: true,
+                        text: '平均得分'
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `平均得分: ${context.parsed.y}分 (${context.label})`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // 等级分布饼图
+    const gradeCtx = document.getElementById('gradeChart').getContext('2d');
+    const gradeDistribution = {{ stats_data.grade_distribution|tojson }};
+    const gradeLabels = Object.keys(gradeDistribution);
+    const gradeData = gradeLabels.map(grade => gradeDistribution[grade].count);
+    const gradeChart = new Chart(gradeCtx, {
+        type: 'pie',
+        data: {
+            labels: gradeLabels,
+            datasets: [{
+                data: gradeData,
+                backgroundColor: [
+                    '#198754', // 优秀 - 绿色
+                    '#0d6efd', // 良好 - 蓝色
+                    '#ffc107', // 合格 - 黄色
+                    '#dc3545'  // 不合格 - 红色
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const grade = context.label;
+                            const count = gradeDistribution[grade].count;
+                            const percentage = gradeDistribution[grade].percentage;
+                            return `${grade}: ${count}个 (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // 类别平均得分率条形图
+    const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+    const categoryAverages = {{ stats_data.category_averages|tojson }};
+    const categoryLabels = Object.keys(categoryAverages);
+    const categoryData = categoryLabels.map(category => categoryAverages[category]);
+    const categoryChart = new Chart(categoryCtx, {
+        type: 'bar',
+        data: {
+            labels: categoryLabels,
+            datasets: [{
+                label: '平均得分率(%)',
+                data: categoryData,
+                backgroundColor: categoryData.map(value => {
+                    if (value >= 90) return 'rgba(25, 135, 84, 0.7)';
+                    if (value >= 75) return 'rgba(13, 110, 253, 0.7)';
+                    if (value >= 60) return 'rgba(255, 193, 7, 0.7)';
+                    return 'rgba(220, 53, 69, 0.7)';
+                }),
+                borderColor: categoryData.map(value => {
+                    if (value >= 90) return 'rgb(25, 135, 84)';
+                    if (value >= 75) return 'rgb(13, 110, 253)';
+                    if (value >= 60) return 'rgb(255, 193, 7)';
+                    return 'rgb(220, 53, 69)';
+                }),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: '得分率(%)'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+    
+    // 报告数量统计图
+    const countCtx = document.getElementById('countChart').getContext('2d');
+    const countChart = new Chart(countCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ stats_data.labels|tojson }},
+            datasets: [{
+                label: '报告数量',
+                data: {{ stats_data.counts|tojson }},
+                backgroundColor: 'rgba(255, 159, 64, 0.7)',
+                borderColor: 'rgb(255, 159, 64)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: '报告数量'
+                    },
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %} 

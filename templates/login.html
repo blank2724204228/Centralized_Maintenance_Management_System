@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}登录 - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow">
+            <div class="card-header bg-white p-4 text-center">
+                <h4 class="mb-0">
+                    <i class="fas fa-user-shield me-2 text-primary"></i>用户登录
+                </h4>
+            </div>
+            <div class="card-body p-4">
+                <form method="post">
+                    <div class="mb-4">
+                        <label for="username" class="form-label">用户名</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="fas fa-user text-muted"></i>
+                            </span>
+                            <input type="text" class="form-control border-start-0" id="username" name="username" required autocomplete="username" placeholder="请输入用户名" autofocus>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label for="password" class="form-label">密码</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="fas fa-lock text-muted"></i>
+                            </span>
+                            <input type="password" class="form-control border-start-0" id="password" name="password" required autocomplete="current-password" placeholder="请输入密码">
+                        </div>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="remember" name="remember">
+                        <label class="form-check-label" for="remember">记住我</label>
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-sign-in-alt me-2"></i>登录
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="card-footer bg-white text-center border-0 py-3">
+                <small class="text-muted">
+                    高速公路养护管理系统安全登录
+                    <i class="fas fa-shield-alt ms-2"></i>
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 系统介绍部分 -->
+<div class="row mt-5">
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center p-4">
+                <div class="feature-icon mb-3">
+                    <i class="fas fa-tasks fa-3x text-primary"></i>
+                </div>
+                <h5 class="card-title">任务管理</h5>
+                <p class="card-text text-muted">集中管理养护任务，包括自动化批准养护工单、手动录入任务、任务分类、进度跟踪等功能。</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center p-4">
+                <div class="feature-icon mb-3">
+                    <i class="fas fa-chart-line fa-3x text-primary"></i>
+                </div>
+                <h5 class="card-title">数据分析</h5>
+                <p class="card-text text-muted">通过大数据分析和智能化决策，将多个养护项目集中安排，减少对交通的影响，提高施工效率。</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body text-center p-4">
+                <div class="feature-icon mb-3">
+                    <i class="fas fa-map-marked-alt fa-3x text-primary"></i>
+                </div>
+                <h5 class="card-title">可视化展示</h5>
+                <p class="card-text text-muted">通过电子地图、图表、图形等方式展示施工整体执行情况、资源使用情况、交通流量趋势等信息。</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

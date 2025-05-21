@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block title %}方案优化 - {{ plan.name }} - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<style>
+    .optimization-result {
+        border-left: 4px solid #28a745;
+        margin-bottom: 15px;
+    }
+    .step-list {
+        margin-left: 0;
+        padding-left: 0;
+        list-style-type: none;
+    }
+    .step-item {
+        padding: 10px;
+        margin-bottom: 5px;
+        border-left: 3px solid #6c757d;
+        background-color: #f8f9fa;
+    }
+    .step-item:hover {
+        background-color: #e9ecef;
+    }
+    .comparison-card {
+        border-radius: 0.25rem;
+        transition: all 0.3s ease;
+    }
+    .comparison-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+    }
+    .improvement-positive {
+        color: #28a745;
+    }
+    .improvement-negative {
+        color: #dc3545;
+    }
+    .criteria-badge {
+        font-size: 0.8rem;
+        padding: 0.25rem 0.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>优化施工方案: {{ plan.name }}</h2>
+        <div>
+            <a href="{{ url_for('plan_detail', plan_id=plan.id) }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>返回方案详情
+            </a>
+        </div>
+    </div>
+
+    <!-- 方案基本信息提示 -->
+    <div class="alert alert-info">
+        <div class="row">
+            <div class="col-md-6">
+                <p class="mb-1"><strong>任务名称:</strong> {{ task.name }}</p>
+                <p class="mb-1"><strong>任务类型:</strong> {{ task.task_type }}</p>
+                <p class="mb-0"><strong>任务位置:</strong> {{ task.location }}</p>
+            </div>
+            <div class="col-md-6">
+                <p class="mb-1"><strong>方案名称:</strong> {{ plan.name }}</p>
+                <p class="mb-1"><strong>方案状态:</strong> {{ plan.status }}</p>
+                <p class="mb-1"><strong>预计工期:</strong> {{ plan.estimated_duration }} 小时</p>
+                <p class="mb-0"><strong>交通影响:</strong> {{ plan.traffic_impact }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 优化选项表单 -->
+    <form method="post" action="{{ url_for('optimize_plan', plan_id=plan.id) }}">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">优化参数设置</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="optimization_type" class="form-label">优化类型</label>
+                        <select id="optimization_type" name="optimization_type" class="form-select" required>
+                            <option value="">请选择优化类型</option>
+                            <option value="任务顺序优化">任务顺序优化（优化任务执行顺序）</option>
+                            <option value="资源分配优化">资源分配优化（优化资源使用效率）</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="optimization_criteria" class="form-label">优化标准</label>
+                        <select id="optimization_criteria" name="optimization_criteria" class="form-select" required>
+                            <option value="">请选择优化标准</option>
+                            <option value="工期最短">工期最短（最小化总工期）</option>
+                            <option value="资源最少">资源最少（减少资源消耗）</option>
+                            <option value="资源均衡">资源均衡（平衡资源使用）</option>
+                            <option value="交通影响最小">交通影响最小（最小化对交通的影响）</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="alert alert-warning">
+                    <h6><i class="fas fa-lightbulb me-2"></i>优化提示:</h6>
+                    <ul class="mb-0">
+                        <li><strong>任务顺序优化</strong>：通过重新排序施工步骤，在保证依赖关系的前提下优化总工期或资源利用率</li>
+                        <li><strong>资源分配优化</strong>：通过调整各步骤的资源分配，提高整体资源利用效率</li>
+                        <li>优化结果将自动应用到施工方案中，您可以在优化后查看改进效果</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 当前步骤顺序 -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">当前施工步骤</h5>
+            </div>
+            <div class="card-body">
+                {% if steps %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>步骤名称</th>
+                                <th>工期(小时)</th>
+                                <th>前置步骤</th>
+                                <th>资源需求</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for step in steps %}
+                            <tr>
+                                <td>{{ step.step_number }}</td>
+                                <td>{{ step.name }}</td>
+                                <td>{{ step.duration }}</td>
+                                <td>{{ step.prerequisites or '-' }}</td>
+                                <td>
+                                    {% if step.resource_requirements %}
+                                    <ul class="mb-0 ps-3">
+                                        {% for req in step.resource_requirements|from_json %}
+                                        <li>{{ req.type }}: {{ req.quantity }} {{ req.unit }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                    {% else %}
+                                    -
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <p class="mb-0">该方案暂无施工步骤，请先添加步骤再进行优化。</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 模拟优化效果展示区域 -->
+        <div id="optimization-preview" class="card mb-4 d-none">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-magic me-2"></i>优化效果预览</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card comparison-card">
+                            <div class="card-body text-center">
+                                <h6 class="card-title text-muted">预计工期</h6>
+                                <div class="d-flex justify-content-center align-items-center my-3">
+                                    <h3 class="me-2">{{ plan.estimated_duration }}h</h3>
+                                    <span class="improvement-positive">
+                                        <i class="fas fa-arrow-right me-1"></i>
+                                        <span id="preview-duration"></span>h
+                                        (<span id="duration-change"></span>%)
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card comparison-card">
+                            <div class="card-body text-center">
+                                <h6 class="card-title text-muted">资源利用率</h6>
+                                <div class="d-flex justify-content-center align-items-center my-3">
+                                    <h3 class="me-2">中等</h3>
+                                    <span class="improvement-positive">
+                                        <i class="fas fa-arrow-right me-1"></i>
+                                        高效
+                                        (<span id="resource-change">+15</span>%)
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card comparison-card">
+                            <div class="card-body text-center">
+                                <h6 class="card-title text-muted">交通影响</h6>
+                                <div class="d-flex justify-content-center align-items-center my-3">
+                                    <h3 class="me-2">{{ plan.traffic_impact }}</h3>
+                                    <span id="traffic-improvement" class="improvement-positive">
+                                        <i class="fas fa-arrow-right me-1"></i>
+                                        <span id="preview-traffic"></span>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-success mt-3">
+                    <h6><i class="fas fa-check-circle me-2"></i>优化建议:</h6>
+                    <ul id="optimization-suggestions">
+                        <li>优化后的工期可缩短约<strong id="duration-saved"></strong>小时</li>
+                        <li>资源利用效率提升，总资源需求减少约<strong id="resource-saved"></strong>%</li>
+                        <li>通过调整步骤顺序，可降低交通高峰期的施工强度</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提交按钮 -->
+        <div class="text-center mb-4">
+            <button type="button" class="btn btn-outline-primary me-2" id="preview-btn">
+                <i class="fas fa-eye me-2"></i>预览优化效果
+            </button>
+            <button type="submit" class="btn btn-success btn-lg">
+                <i class="fas fa-magic me-2"></i>执行优化
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const previewBtn = document.getElementById('preview-btn');
+    const optimizationPreview = document.getElementById('optimization-preview');
+    const optimizationType = document.getElementById('optimization_type');
+    const optimizationCriteria = document.getElementById('optimization_criteria');
+    
+    // 点击预览按钮
+    previewBtn.addEventListener('click', function() {
+        // 检查是否选择了优化类型和标准
+        if (!optimizationType.value || !optimizationCriteria.value) {
+            alert('请选择优化类型和优化标准');
+            return;
+        }
+        
+        // 模拟优化效果数据
+        let durationChange, resourceChange, trafficImpact;
+        
+        if (optimizationType.value === '任务顺序优化') {
+            if (optimizationCriteria.value === '工期最短') {
+                durationChange = -15;
+                resourceChange = 5;
+                trafficImpact = '{{ plan.traffic_impact }}';
+            } else if (optimizationCriteria.value === '资源均衡') {
+                durationChange = -5;
+                resourceChange = 15;
+                trafficImpact = '{{ plan.traffic_impact }}';
+            } else if (optimizationCriteria.value === '交通影响最小') {
+                durationChange = 5;
+                resourceChange = 0;
+                trafficImpact = '{{ "低" if plan.traffic_impact == "中" else "中" if plan.traffic_impact == "高" else plan.traffic_impact }}';
+            }
+        } else if (optimizationType.value === '资源分配优化') {
+            if (optimizationCriteria.value === '资源最少') {
+                durationChange = 10;
+                resourceChange = 25;
+                trafficImpact = '{{ plan.traffic_impact }}';
+            } else if (optimizationCriteria.value === '工期最短') {
+                durationChange = -20;
+                resourceChange = -10;
+                trafficImpact = '{{ "高" if plan.traffic_impact == "中" else "中" if plan.traffic_impact == "低" else plan.traffic_impact }}';
+            }
+        }
+        
+        // 更新预览
+        const originalDuration = {{ plan.estimated_duration }};
+        const newDuration = Math.max(1, originalDuration * (1 + durationChange / 100));
+        
+        document.getElementById('preview-duration').textContent = Math.round(newDuration);
+        document.getElementById('duration-change').textContent = durationChange > 0 ? `+${durationChange}` : durationChange;
+        document.getElementById('resource-change').textContent = resourceChange > 0 ? `+${resourceChange}` : resourceChange;
+        document.getElementById('preview-traffic').textContent = trafficImpact;
+        
+        document.getElementById('duration-saved').textContent = Math.abs(Math.round(originalDuration - newDuration));
+        document.getElementById('resource-saved').textContent = Math.abs(resourceChange);
+        
+        // 设置适当的样式
+        if (durationChange < 0) {
+            document.getElementById('duration-change').parentElement.className = 'improvement-positive';
+        } else {
+            document.getElementById('duration-change').parentElement.className = 'improvement-negative';
+        }
+        
+        if (resourceChange > 0) {
+            document.getElementById('resource-change').parentElement.className = 'improvement-positive';
+        } else {
+            document.getElementById('resource-change').parentElement.className = 'improvement-negative';
+        }
+        
+        // 根据交通影响设置样式
+        const trafficElement = document.getElementById('traffic-improvement');
+        if (trafficImpact === '低') {
+            trafficElement.className = 'improvement-positive';
+        } else if (trafficImpact === '高') {
+            trafficElement.className = 'improvement-negative';
+        } else {
+            trafficElement.className = '';
+        }
+        
+        // 显示预览区域
+        optimizationPreview.classList.remove('d-none');
+    });
+});
+</script>
+{% endblock %} 

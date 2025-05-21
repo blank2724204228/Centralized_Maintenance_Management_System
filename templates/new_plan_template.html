@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}创建方案模板 - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>创建方案模板</h2>
+    <a href="{{ url_for('plan_templates') }}" class="btn btn-secondary">返回模板列表</a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">模板基本信息</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <label for="name" class="form-label">模板名称</label>
+                    <input type="text" class="form-control" id="name" name="name" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="task_type" class="form-label">适用任务类型</label>
+                    <select class="form-select" id="task_type" name="task_type" required>
+                        <option value="">选择类型</option>
+                        <option value="道路养护">道路养护</option>
+                        <option value="桥梁维护">桥梁维护</option>
+                        <option value="隧道维护">隧道维护</option>
+                        <option value="绿化养护">绿化养护</option>
+                        <option value="设施维护">设施维护</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="description" class="form-label">模板描述</label>
+                <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            </div>
+            
+            <div class="mb-3">
+                <label for="steps_template" class="form-label">步骤模板 (JSON格式)</label>
+                <textarea class="form-control" id="steps_template" name="steps_template" rows="10" placeholder='[
+    {
+        "name": "步骤1名称",
+        "description": "步骤描述",
+        "duration": 2,
+        "resource_requirements": [
+            {"type": "人员", "quantity": 3, "unit": "人"},
+            {"type": "设备", "quantity": 1, "unit": "台"}
+        ],
+        "prerequisites": ""
+    },
+    {
+        "name": "步骤2名称",
+        "description": "步骤描述",
+        "duration": 4,
+        "resource_requirements": [
+            {"type": "人员", "quantity": 2, "unit": "人"},
+            {"type": "材料", "quantity": 100, "unit": "kg"}
+        ],
+        "prerequisites": "1"
+    }
+]'></textarea>
+                <div class="form-text">请以JSON格式输入步骤模板，格式参考上面的placeholder</div>
+            </div>
+            
+            <div class="alert alert-info" role="alert">
+                <h6>JSON格式说明：</h6>
+                <ul>
+                    <li><code>name</code>: 步骤名称</li>
+                    <li><code>description</code>: 步骤描述</li>
+                    <li><code>duration</code>: 预计时长(小时)</li>
+                    <li><code>resource_requirements</code>: 资源需求数组</li>
+                    <li><code>prerequisites</code>: 前置步骤ID，多个用逗号分隔</li>
+                </ul>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="button" id="validate-json" class="btn btn-info text-white">验证JSON</button>
+                <button type="submit" class="btn btn-primary">创建模板</button>
+                <a href="{{ url_for('plan_templates') }}" class="btn btn-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-4 d-none" id="preview-card">
+    <div class="card-header">
+        <h5 class="mb-0">预览步骤</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped" id="steps-preview">
+                <thead>
+                    <tr>
+                        <th>步骤序号</th>
+                        <th>步骤名称</th>
+                        <th>描述</th>
+                        <th>预计时长(小时)</th>
+                        <th>资源需求</th>
+                        <th>前置步骤</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const validateBtn = document.getElementById('validate-json');
+        const stepsTemplate = document.getElementById('steps_template');
+        const previewCard = document.getElementById('preview-card');
+        const stepsPreviewTable = document.getElementById('steps-preview').querySelector('tbody');
+        
+        validateBtn.addEventListener('click', function() {
+            try {
+                // 清空预览表格
+                stepsPreviewTable.innerHTML = '';
+                
+                // 解析JSON
+                const stepsData = JSON.parse(stepsTemplate.value);
+                
+                if (!Array.isArray(stepsData)) {
+                    throw new Error('步骤模板必须是数组格式');
+                }
+                
+                // 填充预览表格
+                stepsData.forEach((step, index) => {
+                    const row = document.createElement('tr');
+                    
+                    // 步骤序号
+                    const indexCell = document.createElement('td');
+                    indexCell.textContent = index + 1;
+                    row.appendChild(indexCell);
+                    
+                    // 步骤名称
+                    const nameCell = document.createElement('td');
+                    nameCell.textContent = step.name || '-';
+                    row.appendChild(nameCell);
+                    
+                    // 描述
+                    const descCell = document.createElement('td');
+                    descCell.textContent = step.description || '-';
+                    row.appendChild(descCell);
+                    
+                    // 预计时长
+                    const durationCell = document.createElement('td');
+                    durationCell.textContent = step.duration || 0;
+                    row.appendChild(durationCell);
+                    
+                    // 资源需求
+                    const resourceCell = document.createElement('td');
+                    if (step.resource_requirements && step.resource_requirements.length > 0) {
+                        const ul = document.createElement('ul');
+                        ul.className = 'mb-0 ps-3';
+                        
+                        step.resource_requirements.forEach(resource => {
+                            const li = document.createElement('li');
+                            li.textContent = `${resource.type}: ${resource.quantity} ${resource.unit}`;
+                            ul.appendChild(li);
+                        });
+                        
+                        resourceCell.appendChild(ul);
+                    } else {
+                        resourceCell.textContent = '-';
+                    }
+                    row.appendChild(resourceCell);
+                    
+                    // 前置步骤
+                    const prereqCell = document.createElement('td');
+                    prereqCell.textContent = step.prerequisites || '-';
+                    row.appendChild(prereqCell);
+                    
+                    stepsPreviewTable.appendChild(row);
+                });
+                
+                // 显示预览卡片
+                previewCard.classList.remove('d-none');
+                
+                // 显示成功消息
+                alert('JSON格式有效，可以查看预览');
+                
+            } catch (error) {
+                alert('JSON格式无效: ' + error.message);
+                previewCard.classList.add('d-none');
+            }
+        });
+    });
+</script>
+{% endblock %} 

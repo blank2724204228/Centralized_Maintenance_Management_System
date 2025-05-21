@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}方案优化记录 - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<style>
+    .optimization-card {
+        transition: all 0.2s ease;
+        border-left: 4px solid #28a745;
+    }
+    .optimization-card:hover {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        transform: translateY(-2px);
+    }
+    .badge-optimization {
+        font-size: 0.8rem;
+    }
+    .badge-sequence {
+        background-color: #0d6efd;
+    }
+    .badge-resource {
+        background-color: #20c997;
+    }
+    .positive-change {
+        color: #28a745;
+    }
+    .negative-change {
+        color: #dc3545;
+    }
+    .neutral-change {
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>方案优化记录</h2>
+        <div>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>返回控制面板
+            </a>
+        </div>
+    </div>
+
+    <!-- 优化记录列表 -->
+    <div class="card">
+        <div class="card-header bg-light">
+            <div class="row">
+                <div class="col-md-8">
+                    <h5 class="mb-0">所有优化记录</h5>
+                </div>
+                <div class="col-md-4">
+                    <input type="text" class="form-control" id="searchInput" placeholder="搜索优化记录...">
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            {% if optimizations %}
+            <div class="list-group">
+                {% for optimization in optimizations %}
+                <div class="optimization-card list-group-item list-group-item-action mb-2">
+                    <div class="d-flex w-100 justify-content-between align-items-center">
+                        <h5 class="mb-1">
+                            {% if optimization.optimization_type == '任务顺序优化' %}
+                            <span class="badge bg-primary badge-optimization badge-sequence">任务顺序优化</span>
+                            {% elif optimization.optimization_type == '资源分配优化' %}
+                            <span class="badge bg-success badge-optimization badge-resource">资源分配优化</span>
+                            {% endif %}
+                            {{ optimization.plan_name }}
+                        </h5>
+                        <small class="text-muted">{{ optimization.created_at }}</small>
+                    </div>
+                    <div class="d-flex w-100 justify-content-between">
+                        <p class="mb-1">
+                            <strong>相关任务:</strong> {{ optimization.task_name }}<br>
+                            <strong>优化标准:</strong> {{ optimization.optimization_criteria }}
+                        </p>
+                        <div>
+                            <a href="{{ url_for('view_optimization', plan_id=optimization.plan_id, optimization_id=optimization.id) }}" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-eye me-1"></i>查看详情
+                            </a>
+                            <a href="{{ url_for('plan_detail', plan_id=optimization.plan_id) }}" class="btn btn-sm btn-outline-secondary">
+                                <i class="fas fa-file-alt me-1"></i>查看方案
+                            </a>
+                        </div>
+                    </div>
+                    <div class="d-flex w-100 justify-content-between mt-2">
+                        <small class="text-muted">
+                            优化人: {{ optimization.applied_by_name }}
+                            <span class="ms-3">
+                                {% if optimization.is_applied %}
+                                <span class="badge bg-success">已应用</span>
+                                {% else %}
+                                <span class="badge bg-secondary">未应用</span>
+                                {% endif %}
+                            </span>
+                        </small>
+                        <div>
+                            {% if optimization.duration_change is defined %}
+                                {% if optimization.duration_change < 0 %}
+                                <span class="badge bg-success">工期缩短 {{ -optimization.duration_change }}h</span>
+                                {% elif optimization.duration_change > 0 %}
+                                <span class="badge bg-warning">工期增加 {{ optimization.duration_change }}h</span>
+                                {% endif %}
+                            {% endif %}
+                            
+                            {% if optimization.resource_efficiency is defined and optimization.resource_efficiency != 0 %}
+                                {% if optimization.resource_efficiency > 0 %}
+                                <span class="badge bg-success">资源效率提升 {{ optimization.resource_efficiency|round(1) }}%</span>
+                                {% elif optimization.resource_efficiency < 0 %}
+                                <span class="badge bg-warning">资源效率降低 {{ -optimization.resource_efficiency|round(1) }}%</span>
+                                {% endif %}
+                            {% endif %}
+                            
+                            {% if optimization.traffic_impact_improvement is defined and optimization.traffic_impact_improvement != 0 %}
+                                {% if optimization.traffic_impact_improvement > 0 %}
+                                <span class="badge bg-success">交通影响降低</span>
+                                {% elif optimization.traffic_impact_improvement < 0 %}
+                                <span class="badge bg-danger">交通影响增加</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <p class="mb-0">暂无方案优化记录。您可以通过进入方案详情页面，点击"方案优化"按钮进行方案优化。</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 优化效果总览 -->
+    {% if optimizations %}
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">优化效果总览</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h6 class="card-title text-muted">平均工期缩短</h6>
+                            {% set total_duration_change = 0 %}
+                            {% set optimizations_with_duration = [] %}
+                            {% for opt in optimizations %}
+                                {% if opt.duration_change is defined %}
+                                    {% set optimizations_with_duration = optimizations_with_duration + [opt] %}
+                                    {% set total_duration_change = total_duration_change + opt.duration_change %}
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if optimizations_with_duration|length > 0 %}
+                                {% set avg_duration_change = total_duration_change / optimizations_with_duration|length %}
+                                {% if avg_duration_change < 0 %}
+                                <h3 class="positive-change">{{ (avg_duration_change * -1)|round(1) }}h</h3>
+                                {% elif avg_duration_change > 0 %}
+                                <h3 class="negative-change">+{{ avg_duration_change|round(1) }}h</h3>
+                                {% else %}
+                                <h3 class="neutral-change">0h</h3>
+                                {% endif %}
+                            {% else %}
+                                <h3 class="neutral-change">-</h3>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h6 class="card-title text-muted">平均资源效率提升</h6>
+                            {% set total_resource_efficiency = 0 %}
+                            {% set optimizations_with_resource = [] %}
+                            {% for opt in optimizations %}
+                                {% if opt.resource_efficiency is defined %}
+                                    {% set optimizations_with_resource = optimizations_with_resource + [opt] %}
+                                    {% set total_resource_efficiency = total_resource_efficiency + opt.resource_efficiency %}
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if optimizations_with_resource|length > 0 %}
+                                {% set avg_resource_efficiency = total_resource_efficiency / optimizations_with_resource|length %}
+                                {% if avg_resource_efficiency > 0 %}
+                                <h3 class="positive-change">{{ avg_resource_efficiency|round(1) }}%</h3>
+                                {% elif avg_resource_efficiency < 0 %}
+                                <h3 class="negative-change">{{ avg_resource_efficiency|round(1) }}%</h3>
+                                {% else %}
+                                <h3 class="neutral-change">0%</h3>
+                                {% endif %}
+                            {% else %}
+                                <h3 class="neutral-change">-</h3>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h6 class="card-title text-muted">优化成功率</h6>
+                            {% set optimizations_count = optimizations|length %}
+                            {% set successful_count = 0 %}
+                            {% for opt in optimizations %}
+                                {% if (opt.duration_change is defined and opt.duration_change < 0) or 
+                                    (opt.resource_efficiency is defined and opt.resource_efficiency > 0) or
+                                    (opt.traffic_impact_improvement is defined and opt.traffic_impact_improvement > 0) %}
+                                    {% set successful_count = successful_count + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if optimizations_count > 0 %}
+                                {% set success_rate = (successful_count / optimizations_count) * 100 %}
+                                <h3 class="{% if success_rate >= 70 %}positive-change{% elif success_rate >= 50 %}neutral-change{% else %}negative-change{% endif %}">
+                                    {{ success_rate|round(1) }}%
+                                </h3>
+                            {% else %}
+                                <h3 class="neutral-change">-</h3>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 搜索功能
+    const searchInput = document.getElementById('searchInput');
+    const optimizationCards = document.querySelectorAll('.optimization-card');
+    
+    searchInput.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        
+        optimizationCards.forEach(card => {
+            const text = card.textContent.toLowerCase();
+            if (text.includes(searchTerm)) {
+                card.style.display = '';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    });
+});
+</script>
+{% endblock %} 

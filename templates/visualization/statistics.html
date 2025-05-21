@@ -1,0 +1,411 @@
+{% extends "base.html" %}
+
+{% block title %}统计图表 - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block head %}
+<style>
+    .chart-container {
+        position: relative;
+        height: 300px;
+        margin-bottom: 20px;
+    }
+    .data-card {
+        text-align: center;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .data-card .number {
+        font-size: 2rem;
+        font-weight: bold;
+        margin: 10px 0;
+    }
+    .data-card .title {
+        font-size: 1rem;
+        color: #6c757d;
+    }
+    .data-card-primary {
+        background-color: #e6f2ff;
+        color: #0d6efd;
+    }
+    .data-card-success {
+        background-color: #e7f5e9;
+        color: #198754;
+    }
+    .data-card-warning {
+        background-color: #fff3cd;
+        color: #fd7e14;
+    }
+    .data-card-danger {
+        background-color: #f8d7da;
+        color: #dc3545;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>统计图表</h2>
+        <div>
+            <a href="{{ url_for('visualization_dashboard') }}" class="btn btn-secondary">返回可视化展示</a>
+        </div>
+    </div>
+
+    <!-- 顶部数据卡片 -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="data-card data-card-primary">
+                <div class="title">活跃任务</div>
+                <div class="number">{{ task_status_counts|selectattr('0', 'equalto', '进行中')|map(attribute='1')|first|default(0) }}</div>
+                <div>当前进行中任务数量</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="data-card data-card-success">
+                <div class="title">已完成任务</div>
+                <div class="number">{{ task_status_counts|selectattr('0', 'equalto', '已完成')|map(attribute='1')|first|default(0) }}</div>
+                <div>成功完成的任务数量</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="data-card data-card-warning">
+                <div class="title">待处理任务</div>
+                <div class="number">{{ task_status_counts|selectattr('0', 'equalto', '待处理')|map(attribute='1')|first|default(0) }}</div>
+                <div>等待处理的任务数量</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="data-card data-card-danger">
+                <div class="title">资源总数</div>
+                <div class="number">{{ resource_usage|map(attribute='1')|sum }}</div>
+                <div>系统中的资源总数</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 任务统计图表 -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">任务类型分布</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="taskTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">任务状态分布</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="taskStatusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 资源使用统计 -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">资源类型分布</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="resourceTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">资源分配情况</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="resourceAllocationChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 交通流量趋势图 -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">交通流量与车速趋势</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container" style="height: 400px;">
+                        <canvas id="trafficTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 任务类型分布图
+    const taskTypeCtx = document.getElementById('taskTypeChart').getContext('2d');
+    const taskTypeData = {
+        labels: [{% for type, count in task_count_by_type %}'{{ type }}',{% endfor %}],
+        datasets: [{
+            label: '任务数量',
+            data: [{% for type, count in task_count_by_type %}{{ count }},{% endfor %}],
+            backgroundColor: [
+                'rgba(54, 162, 235, 0.6)',
+                'rgba(255, 99, 132, 0.6)',
+                'rgba(255, 206, 86, 0.6)',
+                'rgba(75, 192, 192, 0.6)',
+                'rgba(153, 102, 255, 0.6)'
+            ],
+            borderColor: [
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 99, 132, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255, 1)'
+            ],
+            borderWidth: 1
+        }]
+    };
+    new Chart(taskTypeCtx, {
+        type: 'doughnut',
+        data: taskTypeData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                }
+            }
+        }
+    });
+
+    // 任务状态分布图
+    const taskStatusCtx = document.getElementById('taskStatusChart').getContext('2d');
+    const taskStatusData = {
+        labels: [{% for status, count in task_status_counts %}'{{ status }}',{% endfor %}],
+        datasets: [{
+            label: '任务数量',
+            data: [{% for status, count in task_status_counts %}{{ count }},{% endfor %}],
+            backgroundColor: [
+                'rgba(255, 206, 86, 0.6)',  // 待处理
+                'rgba(54, 162, 235, 0.6)',  // 进行中
+                'rgba(75, 192, 192, 0.6)',  // 已完成
+                'rgba(255, 99, 132, 0.6)',  // 其他状态
+                'rgba(153, 102, 255, 0.6)'
+            ],
+            borderColor: [
+                'rgba(255, 206, 86, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(255, 99, 132, 1)',
+                'rgba(153, 102, 255, 1)'
+            ],
+            borderWidth: 1
+        }]
+    };
+    new Chart(taskStatusCtx, {
+        type: 'polarArea',
+        data: taskStatusData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                }
+            }
+        }
+    });
+
+    // 资源类型分布图
+    const resourceTypeCtx = document.getElementById('resourceTypeChart').getContext('2d');
+    const resourceTypeData = {
+        labels: [{% for type, count in resource_usage %}'{{ type }}',{% endfor %}],
+        datasets: [{
+            label: '资源数量',
+            data: [{% for type, count in resource_usage %}{{ count }},{% endfor %}],
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.6)',
+                'rgba(54, 162, 235, 0.6)',
+                'rgba(255, 206, 86, 0.6)'
+            ],
+            borderColor: [
+                'rgba(255, 99, 132, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)'
+            ],
+            borderWidth: 1
+        }]
+    };
+    new Chart(resourceTypeCtx, {
+        type: 'pie',
+        data: resourceTypeData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                }
+            }
+        }
+    });
+
+    // 资源分配情况图表 - 使用API获取数据
+    fetch('/api/resource_usage')
+        .then(response => response.json())
+        .then(data => {
+            const labels = Object.keys(data);
+            const allocated = labels.map(key => data[key].allocated);
+            const available = labels.map(key => data[key].available);
+            
+            const resourceAllocationCtx = document.getElementById('resourceAllocationChart').getContext('2d');
+            new Chart(resourceAllocationCtx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '已分配',
+                            data: allocated,
+                            backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: '可用',
+                            data: available,
+                            backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: false,
+                            title: {
+                                display: true,
+                                text: '资源类型'
+                            }
+                        },
+                        y: {
+                            stacked: false,
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '资源数量'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
+    // 交通流量趋势图 - 使用API获取数据
+    fetch('/api/traffic_data')
+        .then(response => response.json())
+        .then(data => {
+            // 按位置分组数据
+            const locations = [...new Set(data.map(d => d.location))];
+            const datasets = [];
+            
+            // 筛选最新的24个数据点，按位置分组
+            const timeLabels = [...new Set(data.map(d => {
+                const time = new Date(d.timestamp);
+                return time.getHours() + ':00';
+            }))];
+            
+            // 为每个位置创建一个数据集
+            locations.forEach((location, index) => {
+                const locationData = data.filter(d => d.location === location);
+                const volumeData = timeLabels.map(time => {
+                    const entry = locationData.find(d => {
+                        const entryTime = new Date(d.timestamp);
+                        return entryTime.getHours() + ':00' === time;
+                    });
+                    return entry ? entry.traffic_volume : 0;
+                });
+                
+                // 为交通流量创建数据集
+                datasets.push({
+                    label: `${location} - 交通流量`,
+                    data: volumeData,
+                    borderColor: getColorByIndex(index, 0.8),
+                    backgroundColor: getColorByIndex(index, 0.2),
+                    fill: false,
+                    tension: 0.4
+                });
+            });
+            
+            // 创建图表
+            const trafficTrendCtx = document.getElementById('trafficTrendChart').getContext('2d');
+            new Chart(trafficTrendCtx, {
+                type: 'line',
+                data: {
+                    labels: timeLabels,
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: '时间'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: '交通流量 (车/小时)'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+        
+    // 辅助函数：根据索引生成颜色
+    function getColorByIndex(index, alpha = 1) {
+        const colors = [
+            `rgba(54, 162, 235, ${alpha})`,   // 蓝色
+            `rgba(255, 99, 132, ${alpha})`,   // 红色
+            `rgba(255, 206, 86, ${alpha})`,   // 黄色
+            `rgba(75, 192, 192, ${alpha})`,   // 青色
+            `rgba(153, 102, 255, ${alpha})`,  // 紫色
+            `rgba(255, 159, 64, ${alpha})`,   // 橙色
+            `rgba(201, 203, 207, ${alpha})`   // 灰色
+        ];
+        return colors[index % colors.length];
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+
+{% block title %}添加施工步骤 - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>添加施工步骤</h2>
+    <a href="{{ url_for('plan_detail', plan_id=plan.id) }}" class="btn btn-secondary">返回方案详情</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">方案: {{ plan.name }}</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>方案ID:</strong> {{ plan.id }}</p>
+                <p><strong>交通影响:</strong> {{ plan.traffic_impact }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>预计工期:</strong> {{ plan.estimated_duration }} 小时</p>
+                <p><strong>状态:</strong> {{ plan.status }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">步骤信息</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            <div class="mb-3">
+                <label for="name" class="form-label">步骤名称</label>
+                <input type="text" class="form-control" id="name" name="name" required>
+            </div>
+            
+            <div class="mb-3">
+                <label for="description" class="form-label">步骤描述</label>
+                <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="duration" class="form-label">预计时长(小时)</label>
+                    <input type="number" class="form-control" id="duration" name="duration" min="0.5" step="0.5" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="prerequisites" class="form-label">前置步骤序号(逗号分隔)</label>
+                    <input type="text" class="form-control" id="prerequisites" name="prerequisites" placeholder="例如: 1,2,3">
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="resource_requirements" class="form-label">资源需求 (JSON格式)</label>
+                <textarea class="form-control" id="resource_requirements" name="resource_requirements" rows="5" placeholder='[
+    {"type": "人员", "quantity": 3, "unit": "人"},
+    {"type": "设备", "quantity": 1, "unit": "台"},
+    {"type": "材料", "quantity": 500, "unit": "kg"}
+]'></textarea>
+                <div class="form-text">请以JSON格式输入资源需求，格式参考上面的placeholder</div>
+            </div>
+            
+            <div class="alert alert-info" role="alert">
+                <h6>资源需求格式说明：</h6>
+                <ul>
+                    <li><code>type</code>: 资源类型 (人员/设备/材料)</li>
+                    <li><code>quantity</code>: 资源数量</li>
+                    <li><code>unit</code>: 单位 (人/台/kg等)</li>
+                </ul>
+            </div>
+            
+            {% if existing_steps %}
+            <div class="mt-4 mb-3">
+                <h6>现有步骤</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>序号</th>
+                                <th>步骤名称</th>
+                                <th>时长</th>
+                                <th>前置步骤</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for step in existing_steps %}
+                            <tr>
+                                <td>{{ step.step_number }}</td>
+                                <td>{{ step.name }}</td>
+                                <td>{{ step.duration }} 小时</td>
+                                <td>{{ step.prerequisites or '-' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="button" id="validate-json" class="btn btn-info text-white">验证JSON</button>
+                <button type="submit" class="btn btn-primary">添加步骤</button>
+                <a href="{{ url_for('plan_detail', plan_id=plan.id) }}" class="btn btn-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const validateBtn = document.getElementById('validate-json');
+        const resourceRequirements = document.getElementById('resource_requirements');
+        
+        validateBtn.addEventListener('click', function() {
+            try {
+                // 尝试解析JSON
+                const json = JSON.parse(resourceRequirements.value);
+                
+                if (!Array.isArray(json)) {
+                    throw new Error('资源需求必须是数组格式');
+                }
+                
+                // 验证每个资源项
+                for (const item of json) {
+                    if (!item.type) {
+                        throw new Error('每个资源项必须包含type字段');
+                    }
+                    if (!item.quantity) {
+                        throw new Error('每个资源项必须包含quantity字段');
+                    }
+                    if (!item.unit) {
+                        throw new Error('每个资源项必须包含unit字段');
+                    }
+                }
+                
+                alert('JSON格式有效');
+                
+            } catch (error) {
+                alert('JSON格式无效: ' + error.message);
+            }
+        });
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,125 @@
+/* 全局样式 */
+body {
+    font-family: 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+    background-color: #f5f5f5;
+}
+
+.card {
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #eee;
+    font-weight: bold;
+}
+
+/* 任务相关样式 */
+.task-priority-high {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.task-priority-medium {
+    color: #fd7e14;
+}
+
+.task-priority-low {
+    color: #28a745;
+}
+
+.task-status {
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.status-pending {
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+.status-in-progress {
+    background-color: #cce5ff;
+    color: #004085;
+}
+
+.status-completed {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-cancelled {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* 表单样式 */
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-primary:hover {
+    background-color: #0069d9;
+    border-color: #0062cc;
+}
+
+/* 资源分配表格 */
+.resource-table th {
+    background-color: #f8f9fa;
+}
+
+.resource-table tr:hover {
+    background-color: #f1f1f1;
+}
+
+/* 仪表盘卡片 */
+.dashboard-card {
+    height: 100%;
+    transition: transform 0.3s;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-5px);
+}
+
+.dashboard-card .card-icon {
+    font-size: 2.5rem;
+    color: #007bff;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .container {
+        padding: 0 15px;
+    }
+    
+    .card {
+        margin-bottom: 15px;
+    }
+}
+
+/* 任务详情页 */
+.task-detail-header {
+    background: linear-gradient(to right, #007bff, #6610f2);
+    color: white;
+    padding: 20px;
+    border-radius: 10px 10px 0 0;
+    margin-bottom: 0;
+}
+
+.task-detail-body {
+    padding: 20px;
+    background: white;
+    border-radius: 0 0 10px 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+} 

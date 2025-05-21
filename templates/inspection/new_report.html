@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}生成考核报告{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">生成考核报告</h2>
+        <div>
+            <a href="{{ url_for('report_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> 返回列表
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <i class="fas fa-file-alt"></i> 报告生成参数
+        </div>
+        <div class="card-body">
+            <form method="post">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">报告标题 <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="title" name="title" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="task_id" class="form-label">选择任务 <span class="text-danger">*</span></label>
+                            <select class="form-select" id="task_id" name="task_id" required>
+                                <option value="" selected disabled>选择要评估的任务</option>
+                                {% for task in tasks %}
+                                    <option value="{{ task.id }}">{{ task.name }} ({{ task.task_type }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="start_date" class="form-label">评估开始日期 <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="start_date" name="start_date" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="end_date" class="form-label">评估结束日期 <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="end_date" name="end_date" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> 系统将基于选定日期范围内的所有已评分检查记录生成考核报告。请确保该任务在所选时间范围内有足够的检查记录。
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <button type="reset" class="btn btn-outline-secondary">重置</button>
+                    <button type="submit" class="btn btn-primary">生成报告</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 设置默认日期范围（过去30天）
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    
+    const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    };
+    
+    document.getElementById('start_date').value = formatDate(thirtyDaysAgo);
+    document.getElementById('end_date').value = formatDate(today);
+    
+    // 任务选择时自动生成标题
+    const taskSelect = document.getElementById('task_id');
+    const titleInput = document.getElementById('title');
+    
+    taskSelect.addEventListener('change', function() {
+        if (this.selectedIndex > 0) {
+            const taskName = this.options[this.selectedIndex].text.split('(')[0].trim();
+            const startDate = document.getElementById('start_date').value;
+            const endDate = document.getElementById('end_date').value;
+            titleInput.value = `${taskName} ${startDate}至${endDate}考核报告`;
+        }
+    });
+    
+    // 日期变更时更新标题
+    document.getElementById('start_date').addEventListener('change', updateTitle);
+    document.getElementById('end_date').addEventListener('change', updateTitle);
+    
+    function updateTitle() {
+        if (taskSelect.selectedIndex > 0) {
+            const taskName = taskSelect.options[taskSelect.selectedIndex].text.split('(')[0].trim();
+            const startDate = document.getElementById('start_date').value;
+            const endDate = document.getElementById('end_date').value;
+            titleInput.value = `${taskName} ${startDate}至${endDate}考核报告`;
+        }
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block title %}编辑任务 - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>编辑任务</h2>
+    <a href="{{ url_for('task_detail', task_id=task.id) }}" class="btn btn-secondary">返回任务详情</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="name" class="form-label">任务名称</label>
+                    <input type="text" class="form-control" id="name" name="name" value="{{ task.name }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="task_type" class="form-label">任务类型</label>
+                    <select class="form-select" id="task_type" name="task_type" required>
+                        <option value="">选择类型</option>
+                        <option value="路面保洁" {% if task.task_type == '路面保洁' %}selected{% endif %}>路面保洁</option>
+                        <option value="绿化修剪" {% if task.task_type == '绿化修剪' %}selected{% endif %}>绿化修剪</option>
+                        <option value="坑洞修补" {% if task.task_type == '坑洞修补' %}selected{% endif %}>坑洞修补</option>
+                        <option value="路面灌缝" {% if task.task_type == '路面灌缝' %}selected{% endif %}>路面灌缝</option>
+                        <option value="交安设施维修" {% if task.task_type == '交安设施维修' %}selected{% endif %}>交安设施维修</option>
+                        <option value="伸缩缝改造维修" {% if task.task_type == '伸缩缝改造维修' %}selected{% endif %}>伸缩缝改造维修</option>
+                        <option value="隧道壁清洗" {% if task.task_type == '隧道壁清洗' %}selected{% endif %}>隧道壁清洗</option>
+                        <option value="沥青路面修复" {% if task.task_type == '沥青路面修复' %}selected{% endif %}>沥青路面修复</option>
+                        <option value="机电设施维护" {% if task.task_type == '机电设施维护' %}selected{% endif %}>机电设施维护</option>
+                        <option value="结构物检测" {% if task.task_type == '结构物检测' %}selected{% endif %}>结构物检测</option>
+                        <option value="其他" {% if task.task_type == '其他' %}selected{% endif %}>其他</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="location" class="form-label">位置/区域</label>
+                <input type="text" class="form-control" id="location" name="location" value="{{ task.location }}" required placeholder="例如：K23+500 - K24+100 主线右侧">
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="latitude" class="form-label">纬度</label>
+                    <input type="number" step="0.000001" class="form-control" id="latitude" name="latitude" value="{{ task.latitude }}" placeholder="例如：22.546789">
+                    <small class="text-muted">用于地图精确定位，如：22.546789</small>
+                </div>
+                <div class="col-md-6">
+                    <label for="longitude" class="form-label">经度</label>
+                    <input type="number" step="0.000001" class="form-control" id="longitude" name="longitude" value="{{ task.longitude }}" placeholder="例如：113.941234">
+                    <small class="text-muted">用于地图精确定位，如：113.941234</small>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="description" class="form-label">内容描述</label>
+                <textarea class="form-control" id="description" name="description" rows="3">{{ task.description }}</textarea>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="start_time" class="form-label">开始时间</label>
+                    <input type="datetime-local" class="form-control" id="start_time" name="start_time" value="{{ task.start_time.strftime('%Y-%m-%dT%H:%M') if task.start_time else '' }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="end_time" class="form-label">结束时间</label>
+                    <input type="datetime-local" class="form-control" id="end_time" name="end_time" value="{{ task.end_time.strftime('%Y-%m-%dT%H:%M') if task.end_time else '' }}" required>
+                </div>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="priority" class="form-label">优先级</label>
+                    <select class="form-select" id="priority" name="priority" required>
+                        <option value="">选择优先级</option>
+                        <option value="1" {% if task.priority == 1 %}selected{% endif %}>高</option>
+                        <option value="2" {% if task.priority == 2 %}selected{% endif %}>中</option>
+                        <option value="3" {% if task.priority == 3 %}selected{% endif %}>低</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="traffic_impact" class="form-label">交通影响</label>
+                    <select class="form-select" id="traffic_impact" name="traffic_impact" required>
+                        <option value="">选择交通影响程度</option>
+                        <option value="高" {% if task.traffic_impact == '高' %}selected{% endif %}>高</option>
+                        <option value="中" {% if task.traffic_impact == '中' %}selected{% endif %}>中</option>
+                        <option value="低" {% if task.traffic_impact == '低' %}selected{% endif %}>低</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="submit" class="btn btn-primary">保存修改</button>
+                <a href="{{ url_for('task_detail', task_id=task.id) }}" class="btn btn-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %} 

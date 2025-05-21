@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% block title %}方案对比 - {{ task.name }} - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>方案对比: {{ task.name }}</h2>
+    <div>
+        <a href="{{ url_for('task_plans', task_id=task.id) }}" class="btn btn-secondary">返回方案列表</a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">任务信息</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <dl class="row">
+                    <dt class="col-sm-4">任务ID</dt>
+                    <dd class="col-sm-8">{{ task.id }}</dd>
+                    
+                    <dt class="col-sm-4">任务类型</dt>
+                    <dd class="col-sm-8">{{ task.task_type }}</dd>
+                    
+                    <dt class="col-sm-4">位置/区域</dt>
+                    <dd class="col-sm-8">{{ task.location }}</dd>
+                </dl>
+            </div>
+            <div class="col-md-6">
+                <dl class="row">
+                    <dt class="col-sm-4">开始时间</dt>
+                    <dd class="col-sm-8">{{ task.start_time.strftime('%Y-%m-%d %H:%M') if task.start_time else '-' }}</dd>
+                    
+                    <dt class="col-sm-4">结束时间</dt>
+                    <dd class="col-sm-8">{{ task.end_time.strftime('%Y-%m-%d %H:%M') if task.end_time else '-' }}</dd>
+                    
+                    <dt class="col-sm-4">任务状态</dt>
+                    <dd class="col-sm-8">
+                        <span class="task-status status-{{ task.status|lower|replace(' ', '-') }}">
+                            {{ task.status }}
+                        </span>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if plans|length < 2 %}
+<div class="alert alert-warning">
+    <p class="mb-0">至少需要两个方案才能进行比较。请创建更多方案。</p>
+</div>
+{% else %}
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">方案基本信息对比</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>对比项</th>
+                        {% for plan in plans %}
+                        <th>
+                            {{ plan.name }}
+                            {% if plan.is_selected %}
+                            <span class="badge bg-success">已选定</span>
+                            {% endif %}
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>交通影响</td>
+                        {% for plan in plans %}
+                        <td>
+                            <span class="badge {% if plan.traffic_impact == '高' %}bg-danger{% elif plan.traffic_impact == '中' %}bg-warning{% else %}bg-success{% endif %}">
+                                {{ plan.traffic_impact }}
+                            </span>
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td>预计工期</td>
+                        {% for plan in plans %}
+                        <td>{{ plan.estimated_duration }} 小时</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td>状态</td>
+                        {% for plan in plans %}
+                        <td>
+                            <span class="badge {% if plan.status == '草稿' %}bg-secondary{% elif plan.status == '已提交' %}bg-primary{% elif plan.status == '已批准' %}bg-success{% elif plan.status == '已执行' %}bg-info{% else %}bg-dark{% endif %}">
+                                {{ plan.status }}
+                            </span>
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td>步骤数量</td>
+                        {% for plan in plans %}
+                        <td>{{ plan.steps|length }}</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td>创建时间</td>
+                        {% for plan in plans %}
+                        <td>{{ plan.created_at }}</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td>最后更新</td>
+                        {% for plan in plans %}
+                        <td>{{ plan.last_updated }}</td>
+                        {% endfor %}
+                    </tr>
+                    <tr>
+                        <td>操作</td>
+                        {% for plan in plans %}
+                        <td>
+                            <a href="{{ url_for('plan_detail', plan_id=plan.id) }}" class="btn btn-sm btn-primary">查看详情</a>
+                            {% if not plan.is_selected %}
+                            <form action="{{ url_for('select_plan', plan_id=plan.id) }}" method="post" class="d-inline mt-2">
+                                <button type="submit" class="btn btn-sm btn-outline-success">选为最终方案</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">方案优缺点分析</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% for plan in plans %}
+            <div class="col-md-{% if plans|length == 2 %}6{% elif plans|length == 3 %}4{% else %}3{% endif %} mb-3">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <h6 class="mb-0">{{ plan.name }}</h6>
+                    </div>
+                    <div class="card-body">
+                        <h6>优点</h6>
+                        <ul>
+                            {% if plan.traffic_impact == '低' %}
+                            <li>对交通影响较小</li>
+                            {% endif %}
+                            {% if plan.estimated_duration < plans|map(attribute='estimated_duration')|max %}
+                            <li>工期较短</li>
+                            {% endif %}
+                            {% if '夜间' in plan.name|lower %}
+                            <li>夜间施工减少对日间交通的影响</li>
+                            {% endif %}
+                            {% if plan.status in ['已批准', '已执行', '已完成'] %}
+                            <li>方案已获批准</li>
+                            {% endif %}
+                        </ul>
+                        
+                        <h6>缺点</h6>
+                        <ul>
+                            {% if plan.traffic_impact == '高' %}
+                            <li>对交通影响较大</li>
+                            {% endif %}
+                            {% if plan.estimated_duration > plans|map(attribute='estimated_duration')|min %}
+                            <li>工期较长</li>
+                            {% endif %}
+                            {% if '夜间' in plan.name|lower %}
+                            <li>夜间施工增加了施工难度和安全风险</li>
+                            {% endif %}
+                            {% if plan.status == '草稿' %}
+                            <li>方案尚未完成</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+{% endif %}
+{% endblock %} 

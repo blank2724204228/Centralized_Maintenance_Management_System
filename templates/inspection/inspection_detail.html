@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block title %}检查记录详情{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">检查记录详情</h2>
+        <div>
+            <a href="{{ url_for('inspection_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> 返回列表
+            </a>
+            {% if inspection.status == '已提交' %}
+                <a href="{{ url_for('evaluate_inspection', inspection_id=inspection.id) }}" class="btn btn-primary">
+                    <i class="fas fa-star"></i> 进行评分
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- 检查基本信息 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-info-circle"></i> 基本信息
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>检查标题：</strong> {{ inspection.title }}</p>
+                            <p><strong>检查类型：</strong> <span class="badge bg-info">{{ inspection.inspection_type }}</span></p>
+                            <p><strong>相关任务：</strong> <a href="{{ url_for('task_detail', task_id=task.id) }}">{{ task.name }}</a></p>
+                            <p><strong>检查地点：</strong> {{ inspection.location }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>检查日期：</strong> {{ inspection.inspection_date.strftime('%Y-%m-%d %H:%M') }}</p>
+                            <p><strong>检查人：</strong> {{ inspection.inspector_name }}</p>
+                            <p><strong>检查人单位：</strong> {{ inspection.inspector_organization }}</p>
+                            <p><strong>状态：</strong> 
+                                {% if inspection.status == '已提交' %}
+                                    <span class="badge bg-warning">{{ inspection.status }}</span>
+                                {% elif inspection.status == '已评分' %}
+                                    <span class="badge bg-success">{{ inspection.status }}</span>
+                                {% elif inspection.status == '已处理' %}
+                                    <span class="badge bg-secondary">{{ inspection.status }}</span>
+                                {% else %}
+                                    <span class="badge bg-light text-dark">{{ inspection.status }}</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <h5>检查内容</h5>
+                        <div class="border p-3 rounded bg-light">
+                            {% if inspection.content %}
+                                {{ inspection.content | safe | nl2br }}
+                            {% else %}
+                                <p class="text-muted">未提供检查内容</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 发现的问题 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-exclamation-triangle"></i> 发现的问题
+                </div>
+                <div class="card-body">
+                    {% set issues = inspection.issues | from_json %}
+                    {% if issues and issues|length > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>问题描述</th>
+                                        <th>严重程度</th>
+                                        <th>状态</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for issue in issues %}
+                                        <tr>
+                                            <td>{{ loop.index }}</td>
+                                            <td>{{ issue.description }}</td>
+                                            <td>
+                                                {% if issue.severity == '严重' %}
+                                                    <span class="badge bg-danger">{{ issue.severity }}</span>
+                                                {% elif issue.severity == '重要' %}
+                                                    <span class="badge bg-warning">{{ issue.severity }}</span>
+                                                {% else %}
+                                                    <span class="badge bg-info">{{ issue.severity }}</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                {% if issue.status == '已处理' %}
+                                                    <span class="badge bg-success">{{ issue.status }}</span>
+                                                {% elif issue.status == '处理中' %}
+                                                    <span class="badge bg-primary">{{ issue.status }}</span>
+                                                {% else %}
+                                                    <span class="badge bg-secondary">{{ issue.status }}</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">未发现问题</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- 评分结果 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-star"></i> 评分结果
+                </div>
+                <div class="card-body">
+                    {% if scores and scores|length > 0 %}
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>评分项</th>
+                                        <th>分数</th>
+                                        <th>满分</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% set total_score = 0 %}
+                                    {% set total_max = 0 %}
+                                    {% for score in scores %}
+                                        {% set criteria_item = criteria[score.criteria_id] %}
+                                        <tr>
+                                            <td>
+                                                <div>{{ criteria_item.name }}</div>
+                                                <small class="text-muted">{{ criteria_item.category }}</small>
+                                            </td>
+                                            <td>{{ score.score }}</td>
+                                            <td>{{ criteria_item.max_score }}</td>
+                                        </tr>
+                                        {% set total_score = total_score + score.score %}
+                                        {% set total_max = total_max + criteria_item.max_score %}
+                                    {% endfor %}
+                                    <tr class="table-primary">
+                                        <th>总分</th>
+                                        <th>{{ total_score }}</th>
+                                        <th>{{ total_max }}</th>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="3">
+                                            <div class="text-center">
+                                                <h4>得分率: {{ ((total_score / total_max) * 100)|round(2) }}%</h4>
+                                                <div class="progress">
+                                                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ ((total_score / total_max) * 100)|round }}%"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <p>该检查记录尚未评分。</p>
+                            {% if inspection.status == '已提交' %}
+                                <a href="{{ url_for('evaluate_inspection', inspection_id=inspection.id) }}" class="btn btn-primary btn-sm">进行评分</a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 相关信息 -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-link"></i> 相关信息
+                </div>
+                <div class="card-body">
+                    <p><strong>创建日期：</strong> {{ inspection.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                    <hr>
+                    <h6>任务信息</h6>
+                    <p><strong>任务名称：</strong> {{ task.name }}</p>
+                    <p><strong>任务类型：</strong> {{ task.task_type }}</p>
+                    <p><strong>任务状态：</strong> {{ task.status }}</p>
+                    <div class="d-grid gap-2">
+                        <a href="{{ url_for('task_detail', task_id=task.id) }}" class="btn btn-outline-primary">查看任务详情</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

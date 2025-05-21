@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% block title %}考核报告详情{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">考核报告详情</h2>
+        <div>
+            <a href="{{ url_for('report_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> 返回列表
+            </a>
+            <a href="#" class="btn btn-outline-primary" onclick="window.print()">
+                <i class="fas fa-print"></i> 打印报告
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- 报告主体内容 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h3 class="mb-0">{{ report.title }}</h3>
+                            <small class="text-muted">生成于: {{ report.generated_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                        <div>
+                            <span class="badge bg-primary rounded-pill">报告编号: {{ report.id }}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h5 class="alert-heading">报告摘要</h5>
+                        <p>{{ report.summary }}</p>
+                        <hr>
+                        <p class="mb-0">评估期间: {{ report.start_date.strftime('%Y-%m-%d') }} 至 {{ report.end_date.strftime('%Y-%m-%d') }}</p>
+                    </div>
+
+                    <!-- 总体得分 -->
+                    <div class="row text-center">
+                        <div class="col-md-4 mb-4">
+                            <div class="card border-primary h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">总体得分</h5>
+                                    <h2 class="display-4">{{ report.total_score }}</h2>
+                                    <small class="text-muted">满分10分</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <div class="card border-info h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">等级评定</h5>
+                                    <h2 class="display-4">
+                                        {% if report.grade == '优秀' %}
+                                            <span class="text-success">{{ report.grade }}</span>
+                                        {% elif report.grade == '良好' %}
+                                            <span class="text-primary">{{ report.grade }}</span>
+                                        {% elif report.grade == '合格' %}
+                                            <span class="text-warning">{{ report.grade }}</span>
+                                        {% else %}
+                                            <span class="text-danger">{{ report.grade }}</span>
+                                        {% endif %}
+                                    </h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 mb-4">
+                            <div class="card border-success h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">同类项目排名</h5>
+                                    <h2 class="display-4">第 {{ report.rank }} 名</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 类别得分 -->
+                    <h5 class="mt-4 mb-3">各类别得分</h5>
+                    <div class="row">
+                        {% for category, score_data in category_scores.items() %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100">
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ category }}</h6>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>得分: {{ score_data.score }}{% if score_data.max %} / {{ score_data.max }}{% endif %}</div>
+                                            <div>{{ score_data.percentage }}%</div>
+                                        </div>
+                                        <div class="progress mt-2">
+                                            <div class="progress-bar progress-bar-striped 
+                                                {% if score_data.percentage >= 90 %}
+                                                    bg-success
+                                                {% elif score_data.percentage >= 75 %}
+                                                    bg-info
+                                                {% elif score_data.percentage >= 60 %}
+                                                    bg-warning
+                                                {% else %}
+                                                    bg-danger
+                                                {% endif %}"
+                                                role="progressbar" style="width: {{ score_data.percentage }}%">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <!-- 优势与不足 -->
+                    <div class="row mt-4">
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-success text-white">
+                                    <i class="fas fa-thumbs-up"></i> 优势表现
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-group list-group-flush">
+                                        {% if strengths and strengths|length > 0 %}
+                                            {% for strength in strengths %}
+                                                <li class="list-group-item">{{ strength }}</li>
+                                            {% endfor %}
+                                        {% else %}
+                                            <li class="list-group-item text-muted">未发现显著优势</li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-header bg-warning">
+                                    <i class="fas fa-tools"></i> 改进建议
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-group list-group-flush">
+                                        {% if improvements and improvements|length > 0 %}
+                                            {% for improvement in improvements %}
+                                                <li class="list-group-item">{{ improvement }}</li>
+                                            {% endfor %}
+                                        {% else %}
+                                            <li class="list-group-item text-muted">未发现需要改进的方面</li>
+                                        {% endif %}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <!-- 检查记录 -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-clipboard-list"></i> 参考检查记录
+                </div>
+                <div class="card-body">
+                    {% if inspections and inspections|length > 0 %}
+                        <div class="list-group">
+                            {% for inspection in inspections %}
+                                <a href="{{ url_for('inspection_detail', inspection_id=inspection.id) }}" class="list-group-item list-group-item-action">
+                                    <div class="d-flex w-100 justify-content-between">
+                                        <h6 class="mb-1">{{ inspection.title }}</h6>
+                                        <small>{{ inspection.inspection_date.strftime('%Y-%m-%d') }}</small>
+                                    </div>
+                                    <p class="mb-1">{{ inspection.inspector_name }} / {{ inspection.inspector_organization }}</p>
+                                    <small>
+                                        <span class="badge bg-info">{{ inspection.inspection_type }}</span>
+                                        {% if inspection.status == '已提交' %}
+                                            <span class="badge bg-warning">{{ inspection.status }}</span>
+                                        {% elif inspection.status == '已评分' %}
+                                            <span class="badge bg-success">{{ inspection.status }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ inspection.status }}</span>
+                                        {% endif %}
+                                    </small>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            没有相关的检查记录
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 任务信息 -->
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-tasks"></i> 任务信息
+                </div>
+                <div class="card-body">
+                    <h5>{{ task.name }}</h5>
+                    <p><strong>任务类型：</strong> {{ task.task_type }}</p>
+                    <p><strong>任务位置：</strong> {{ task.location }}</p>
+                    <p><strong>任务状态：</strong> {{ task.status }}</p>
+                    <p><strong>优先级：</strong> {{ task.priority }}</p>
+                    <p><strong>开始时间：</strong> {{ task.start_time.strftime('%Y-%m-%d') }}</p>
+                    <p><strong>结束时间：</strong> {{ task.end_time.strftime('%Y-%m-%d') }}</p>
+                    <hr>
+                    <div class="d-grid">
+                        <a href="{{ url_for('task_detail', task_id=task.id) }}" class="btn btn-outline-primary">
+                            <i class="fas fa-eye"></i> 查看任务详情
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 打印样式 -->
+<style media="print">
+    /* 隐藏不需要打印的元素 */
+    .btn, .navbar, footer {
+        display: none !important;
+    }
+    
+    /* 确保报告占满整页 */
+    .container-fluid {
+        width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    
+    /* 调整页面布局 */
+    .col-lg-8, .col-lg-4 {
+        width: 100% !important;
+        max-width: 100% !important;
+        flex: 0 0 100% !important;
+    }
+    
+    /* 添加页眉 */
+    @page {
+        margin: 2cm;
+    }
+    
+    /* 确保背景色打印 */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+</style>
+{% endblock %} 

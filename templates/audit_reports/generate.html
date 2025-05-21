@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}生成审计报告 - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<style>
+    .form-card {
+        border-left: 4px solid #6f42c1;
+    }
+    .report-type-card {
+        transition: all 0.2s ease;
+        cursor: pointer;
+        border-radius: 0.25rem;
+    }
+    .report-type-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+    }
+    .report-type-card.selected {
+        border: 2px solid #6f42c1;
+        background-color: rgba(111, 66, 193, 0.05);
+    }
+    .report-type-icon {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+    .resource-icon {
+        color: #fd7e14;
+    }
+    .task-icon {
+        color: #28a745;
+    }
+    .plan-icon {
+        color: #6f42c1;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>生成审计报告</h2>
+        <div>
+            <a href="{{ url_for('audit_reports') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>返回报告列表
+            </a>
+        </div>
+    </div>
+
+    <form method="post" action="{{ url_for('generate_audit_report') }}" id="reportForm">
+        <!-- 报告类型选择 -->
+        <div class="card form-card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">1. 选择报告类型</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for report_type_value, report_type_name in report_types %}
+                    <div class="col-md-4 mb-3">
+                        <div class="card report-type-card text-center h-100" data-report-type="{{ report_type_value }}">
+                            <div class="card-body">
+                                {% if report_type_value == '资源调度合规' %}
+                                <div class="report-type-icon resource-icon">
+                                    <i class="fas fa-cubes"></i>
+                                </div>
+                                {% elif report_type_value == '任务分配透明度' %}
+                                <div class="report-type-icon task-icon">
+                                    <i class="fas fa-tasks"></i>
+                                </div>
+                                {% elif report_type_value == '方案调整合规' %}
+                                <div class="report-type-icon plan-icon">
+                                    <i class="fas fa-project-diagram"></i>
+                                </div>
+                                {% endif %}
+                                <h5 class="card-title">{{ report_type_name }}</h5>
+                                <p class="card-text">
+                                    {% if report_type_value == '资源调度合规' %}
+                                    审计资源分配情况，评估资源利用率和分配合理性
+                                    {% elif report_type_value == '任务分配透明度' %}
+                                    审计任务创建和资源分配情况，评估任务分配透明度
+                                    {% elif report_type_value == '方案调整合规' %}
+                                    审计方案调整和优化记录，评估调整过程合规性
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <input type="hidden" name="report_type" id="report_type" required>
+            </div>
+        </div>
+
+        <!-- 报告基本信息 -->
+        <div class="card form-card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">2. 填写报告基本信息</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label for="report_name" class="form-label">报告名称</label>
+                        <input type="text" class="form-control" id="report_name" name="report_name" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <label for="start_date" class="form-label">审计开始日期</label>
+                        <input type="date" class="form-control" id="start_date" name="start_date" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="end_date" class="form-label">审计结束日期</label>
+                        <input type="date" class="form-control" id="end_date" name="end_date" required>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 报告生成提示 -->
+        <div class="card form-card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">3. 报告生成说明</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h6><i class="fas fa-info-circle me-2"></i>报告生成说明</h6>
+                    <p>系统将根据您选择的报告类型和时间范围，自动分析相关数据并生成审计报告。报告会包含以下内容：</p>
+                    <ul>
+                        <li>数据统计与分析</li>
+                        <li>潜在问题与风险点</li>
+                        <li>合规性评估</li>
+                        <li>改进建议</li>
+                    </ul>
+                    <p class="mb-0">报告生成后，您可以查看详细内容，导出或分享给相关人员。</p>
+                </div>
+                
+                <div id="resourceAuditInfo" class="alert alert-warning d-none">
+                    <h6><i class="fas fa-cube me-2"></i>资源调度合规审计说明</h6>
+                    <p>该审计将重点关注以下方面：</p>
+                    <ul>
+                        <li>资源使用频率和使用量统计</li>
+                        <li>资源闲置情况分析</li>
+                        <li>资源过度使用风险评估</li>
+                        <li>资源分配合理性建议</li>
+                    </ul>
+                </div>
+                
+                <div id="taskAuditInfo" class="alert alert-success d-none">
+                    <h6><i class="fas fa-tasks me-2"></i>任务分配透明度审计说明</h6>
+                    <p>该审计将重点关注以下方面：</p>
+                    <ul>
+                        <li>任务创建和分配统计</li>
+                        <li>资源分配到任务的合理性</li>
+                        <li>任务分配透明度评估</li>
+                        <li>任务资源分配优化建议</li>
+                    </ul>
+                </div>
+                
+                <div id="planAuditInfo" class="alert alert-primary d-none">
+                    <h6><i class="fas fa-project-diagram me-2"></i>方案调整合规审计说明</h6>
+                    <p>该审计将重点关注以下方面：</p>
+                    <ul>
+                        <li>方案调整频率与原因分析</li>
+                        <li>调整前后对比评估</li>
+                        <li>调整过程合规性检查</li>
+                        <li>方案管理优化建议</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 提交按钮 -->
+        <div class="text-center mb-4">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="fas fa-file-alt me-2"></i>生成审计报告
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 报告类型选择逻辑
+    const reportTypeCards = document.querySelectorAll('.report-type-card');
+    const reportTypeInput = document.getElementById('report_type');
+    
+    // 特定类型报告说明
+    const resourceAuditInfo = document.getElementById('resourceAuditInfo');
+    const taskAuditInfo = document.getElementById('taskAuditInfo');
+    const planAuditInfo = document.getElementById('planAuditInfo');
+    
+    // 设置默认日期范围（近30天）
+    const today = new Date();
+    const thirtyDaysAgo = new Date(today);
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    
+    document.getElementById('end_date').valueAsDate = today;
+    document.getElementById('start_date').valueAsDate = thirtyDaysAgo;
+    
+    // 自动生成默认报告名称
+    function updateReportName() {
+        const reportType = reportTypeInput.value;
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
+        
+        if (reportType && startDate && endDate) {
+            let typeName = '';
+            switch (reportType) {
+                case '资源调度合规':
+                    typeName = '资源调度合规审计';
+                    break;
+                case '任务分配透明度':
+                    typeName = '任务分配透明度审计';
+                    break;
+                case '方案调整合规':
+                    typeName = '方案调整合规审计';
+                    break;
+            }
+            
+            const formattedStartDate = startDate.replace(/-/g, '');
+            const formattedEndDate = endDate.replace(/-/g, '');
+            
+            document.getElementById('report_name').value = `${typeName}_${formattedStartDate}_${formattedEndDate}`;
+        }
+    }
+    
+    // 报告类型卡片点击事件
+    reportTypeCards.forEach(card => {
+        card.addEventListener('click', function() {
+            // 移除所有卡片的选中状态
+            reportTypeCards.forEach(c => c.classList.remove('selected'));
+            
+            // 添加当前卡片选中状态
+            this.classList.add('selected');
+            
+            // 设置隐藏输入值
+            const reportType = this.dataset.reportType;
+            reportTypeInput.value = reportType;
+            
+            // 显示对应的审计说明
+            resourceAuditInfo.classList.add('d-none');
+            taskAuditInfo.classList.add('d-none');
+            planAuditInfo.classList.add('d-none');
+            
+            if (reportType === '资源调度合规') {
+                resourceAuditInfo.classList.remove('d-none');
+            } else if (reportType === '任务分配透明度') {
+                taskAuditInfo.classList.remove('d-none');
+            } else if (reportType === '方案调整合规') {
+                planAuditInfo.classList.remove('d-none');
+            }
+            
+            // 更新报告名称
+            updateReportName();
+        });
+    });
+    
+    // 日期变更时更新报告名称
+    document.getElementById('start_date').addEventListener('change', updateReportName);
+    document.getElementById('end_date').addEventListener('change', updateReportName);
+    
+    // 表单提交验证
+    document.getElementById('reportForm').addEventListener('submit', function(e) {
+        if (!reportTypeInput.value) {
+            e.preventDefault();
+            alert('请选择报告类型');
+            return false;
+        }
+        
+        const startDate = new Date(document.getElementById('start_date').value);
+        const endDate = new Date(document.getElementById('end_date').value);
+        
+        if (startDate > endDate) {
+            e.preventDefault();
+            alert('开始日期不能晚于结束日期');
+            return false;
+        }
+    });
+});
+</script>
+{% endblock %} 

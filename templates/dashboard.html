@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block title %}控制面板 - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block head %}
+<style>
+    .welcome-banner {
+        background: linear-gradient(to right, #eef5ff, #ffffff);
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        border-left: 5px solid var(--primary-color);
+    }
+    
+    .stat-card {
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: transform 0.3s;
+        border: none;
+        height: 100%;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .stat-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 1rem;
+        font-size: 1.5rem;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        margin-bottom: 0;
+    }
+    
+    .card-header-tabs {
+        margin-left: -1rem;
+        margin-right: -1rem;
+    }
+    
+    .task-card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        margin-bottom: 1rem;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .task-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .priority-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 0.5rem;
+    }
+    
+    .priority-high {
+        background-color: var(--danger-color);
+    }
+    
+    .priority-medium {
+        background-color: var(--warning-color);
+    }
+    
+    .priority-low {
+        background-color: var(--success-color);
+    }
+    
+    .plan-status {
+        padding: 0.35rem 0.65rem;
+        font-size: 0.75rem;
+        font-weight: 500;
+        border-radius: 4px;
+    }
+    
+    .quick-action {
+        padding: 1.2rem;
+        text-align: center;
+        border-radius: 8px;
+        background-color: #fff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        margin-bottom: 1rem;
+        transition: all 0.3s;
+        border: none;
+        text-decoration: none;
+        color: var(--dark-color);
+        display: block;
+        height: 100%;
+    }
+    
+    .quick-action:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        color: var(--primary-color);
+        text-decoration: none;
+    }
+    
+    .quick-action i {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: var(--primary-color);
+    }
+    
+    .quick-action h5 {
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+    }
+    
+    .quick-action p {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-bottom: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- 欢迎横幅 -->
+<div class="welcome-banner">
+    <div class="d-flex align-items-center">
+        <div>
+            <h3>欢迎回来，{{ current_user.username }}</h3>
+            <p class="mb-0">今天是 <strong>{{ now.strftime('%Y年%m月%d日') }}</strong>，当前角色：<span class="badge bg-primary">{{ current_user.role }}</span></p>
+        </div>
+        <div class="ms-auto">
+            <a href="{{ url_for('visualization_dashboard') }}" class="btn btn-primary">
+                <i class="fas fa-chart-bar me-2"></i>查看可视化中心
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- 统计卡片 -->
+<div class="row mb-4">
+    <div class="col-md-6 col-lg-3">
+        <div class="stat-card">
+            <div class="d-flex">
+                <div class="stat-icon bg-primary-light text-primary">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <div>
+                    <h6 class="stat-label">任务总数</h6>
+                    <h3 class="stat-value">{{ tasks|length }}</h3>
+                    <small class="text-muted">全部任务</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="stat-card">
+            <div class="d-flex">
+                <div class="stat-icon bg-warning-light text-warning">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div>
+                    <h6 class="stat-label">进行中任务</h6>
+                    <h3 class="stat-value">{{ tasks|selectattr('status', 'equalto', '进行中')|list|length }}</h3>
+                    <small class="text-muted">正在进行</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="stat-card">
+            <div class="d-flex">
+                <div class="stat-icon bg-info-light text-info">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div>
+                    <h6 class="stat-label">方案总数</h6>
+                    <h3 class="stat-value">{{ plans|length }}</h3>
+                    <small class="text-muted">施工方案</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 col-lg-3">
+        <div class="stat-card">
+            <div class="d-flex">
+                <div class="stat-icon bg-success-light text-success">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div>
+                    <h6 class="stat-label">已批准方案</h6>
+                    <h3 class="stat-value">{{ plans|selectattr('status', 'equalto', '已批准')|list|length }}</h3>
+                    <small class="text-muted">可执行</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 快速操作 -->
+<div class="card mb-4">
+    <div class="card-header bg-white">
+        <h5 class="mb-0"><i class="fas fa-bolt me-2 text-primary"></i>快速操作</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-6 col-lg-3">
+                <a href="{{ url_for('new_task') }}" class="quick-action">
+                    <i class="fas fa-plus-circle"></i>
+                    <h5>创建新任务</h5>
+                    <p>添加新的养护任务</p>
+                </a>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <a href="{{ url_for('resources') }}" class="quick-action">
+                    <i class="fas fa-tools"></i>
+                    <h5>管理资源</h5>
+                    <p>查看和分配资源</p>
+                </a>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <a href="{{ url_for('plans') }}" class="quick-action">
+                    <i class="fas fa-clipboard-list"></i>
+                    <h5>施工方案</h5>
+                    <p>查看和管理施工方案</p>
+                </a>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <a href="{{ url_for('report_list') }}" class="quick-action">
+                    <i class="fas fa-chart-pie"></i>
+                    <h5>考核报告</h5>
+                    <p>查看考核与评估</p>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 任务和方案 -->
+<div class="row">
+    <!-- 最近任务 -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-list-alt me-2 text-primary"></i>最近任务</h5>
+                <a href="{{ url_for('tasks') }}" class="btn btn-sm btn-outline-primary">查看全部</a>
+            </div>
+            <div class="card-body">
+                {% if tasks %}
+                <div class="list-group">
+                    {% for task in tasks[:5] %}
+                    <a href="{{ url_for('task_detail', task_id=task.id) }}" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="priority-indicator priority-{% if task.priority == 1 %}high{% elif task.priority == 2 %}medium{% else %}low{% endif %}"></span>
+                                {{ task.name }}
+                                <small class="d-block text-muted mt-1">{{ task.location }} | {{ task.task_type }}</small>
+                            </div>
+                            <span class="badge bg-{{ task.status == '已完成' and 'success' or (task.status == '进行中' and 'info' or 'secondary') }}">
+                                {{ task.status }}
+                            </span>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">暂无任务数据</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- 最近方案 -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-file-alt me-2 text-primary"></i>最近方案</h5>
+                <a href="{{ url_for('plans') }}" class="btn btn-sm btn-outline-primary">查看全部</a>
+            </div>
+            <div class="card-body">
+                {% if plans %}
+                <div class="list-group">
+                    {% for plan in plans[:5] %}
+                    <a href="{{ url_for('plan_detail', plan_id=plan.id) }}" class="list-group-item list-group-item-action">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                {{ plan.name }}
+                                <small class="d-block text-muted mt-1">交通影响: {{ plan.traffic_impact }} | 工期: {{ plan.estimated_duration }}小时</small>
+                            </div>
+                            <div>
+                                <span class="badge bg-{% if plan.status == '已批准' %}success{% elif plan.status == '草稿' %}secondary{% elif plan.status == '已提交' %}primary{% elif plan.status == '执行中' %}info{% else %}dark{% endif %}">
+                                    {{ plan.status }}
+                                </span>
+                                {% if plan.is_selected %}
+                                <span class="badge bg-warning ms-1">已选定</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </a>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="alert alert-info">暂无方案数据</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 在这里可以添加控制面板相关的脚本
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}分配资源 - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>分配资源</h2>
+    <a href="{{ url_for('task_detail', task_id=task.id) }}" class="btn btn-secondary">返回任务详情</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        任务信息
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h5>{{ task.name }}</h5>
+                <p>
+                    <span class="badge bg-info me-2">{{ task.task_type }}</span>
+                    <span class="badge {% if task.priority == 1 %}bg-danger{% elif task.priority == 2 %}bg-warning{% else %}bg-success{% endif %}">
+                        优先级: {% if task.priority == 1 %}高{% elif task.priority == 2 %}中{% else %}低{% endif %}
+                    </span>
+                </p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>位置/区域:</strong> {{ task.location }}</p>
+                <p><strong>时间段:</strong> {{ task.start_time.strftime('%Y-%m-%d %H:%M') if task.start_time else '-' }} 至 {{ task.end_time.strftime('%Y-%m-%d %H:%M') if task.end_time else '-' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        资源分配
+    </div>
+    <div class="card-body">
+        <form method="post">
+            <div id="resource-rows">
+                <div class="row mb-3 resource-row">
+                    <div class="col-md-5">
+                        <label for="resources" class="form-label">资源</label>
+                        <select name="resources" class="form-select" required>
+                            <option value="">选择资源</option>
+                            {% for resource in resources %}
+                            <option value="{{ resource.id }}">{{ resource.name }} ({{ resource.resource_type }}{% if resource.specialty %} - {{ resource.specialty }}{% endif %})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <label for="quantities" class="form-label">数量</label>
+                        <input type="number" name="quantities" class="form-control" placeholder="数量" min="1" value="1" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="d-block">&nbsp;</label>
+                        <button type="button" class="btn btn-danger" disabled>删除</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <button type="button" class="btn btn-secondary" onclick="addResourceRow()">
+                    添加更多资源
+                </button>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="submit" class="btn btn-primary">确认分配</button>
+                <a href="{{ url_for('task_detail', task_id=task.id) }}" class="btn btn-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if task.resources %}
+<div class="card mt-4">
+    <div class="card-header">
+        已分配资源
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped resource-table">
+                <thead>
+                    <tr>
+                        <th>资源名称</th>
+                        <th>类型</th>
+                        <th>专业技能</th>
+                        <th>数量</th>
+                        <th>开始时间</th>
+                        <th>结束时间</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for allocation in task.resources %}
+                    <tr>
+                        <td>{{ allocation.resource.name }}</td>
+                        <td>{{ allocation.resource.resource_type }}</td>
+                        <td>{{ allocation.resource.specialty or '-' }}</td>
+                        <td>{{ allocation.quantity }}</td>
+                        <td>{{ allocation.start_time.strftime('%Y-%m-%d %H:%M') if allocation.start_time else '-' }}</td>
+                        <td>{{ allocation.end_time.strftime('%Y-%m-%d %H:%M') if allocation.end_time else '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %} 

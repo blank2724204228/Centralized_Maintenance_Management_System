@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}日志详情 - {{ log.operation_type }} - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<style>
+    .json-viewer {
+        background-color: #f8f9fa;
+        border-radius: 4px;
+        padding: 15px;
+        font-family: monospace;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    .detail-card {
+        margin-bottom: 15px;
+        border-left: 4px solid #17a2b8;
+    }
+    .section-title {
+        color: #495057;
+        border-bottom: 1px solid #dee2e6;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+    .badge-operation {
+        font-size: 0.9rem;
+    }
+    .badge-login {
+        background-color: #007bff;
+    }
+    .badge-task {
+        background-color: #28a745;
+    }
+    .badge-resource {
+        background-color: #fd7e14;
+    }
+    .badge-plan {
+        background-color: #6f42c1;
+    }
+    .badge-audit {
+        background-color: #17a2b8;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>日志详情</h2>
+        <div>
+            <a href="{{ url_for('system_logs') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>返回日志列表
+            </a>
+        </div>
+    </div>
+
+    <!-- 日志概览 -->
+    <div class="card detail-card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">
+                {% if log.operation_type.startswith('用户') %}
+                <span class="badge bg-primary badge-operation badge-login">{{ log.operation_type }}</span>
+                {% elif log.operation_type.startswith('创建任务') or log.operation_type.startswith('任务') %}
+                <span class="badge bg-success badge-operation badge-task">{{ log.operation_type }}</span>
+                {% elif log.operation_type.startswith('资源') %}
+                <span class="badge bg-warning badge-operation badge-resource">{{ log.operation_type }}</span>
+                {% elif log.operation_type.startswith('方案') %}
+                <span class="badge bg-purple badge-operation badge-plan">{{ log.operation_type }}</span>
+                {% elif log.operation_type.startswith('生成审计') %}
+                <span class="badge bg-info badge-operation badge-audit">{{ log.operation_type }}</span>
+                {% else %}
+                <span class="badge bg-secondary badge-operation">{{ log.operation_type }}</span>
+                {% endif %}
+                {{ log.operation_type }}
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-4">日志ID</dt>
+                        <dd class="col-sm-8">{{ log.log_id }}</dd>
+                        
+                        <dt class="col-sm-4">操作用户</dt>
+                        <dd class="col-sm-8">{{ log.user_name }}</dd>
+                        
+                        <dt class="col-sm-4">操作时间</dt>
+                        <dd class="col-sm-8">{{ log.timestamp }}</dd>
+                        
+                        <dt class="col-sm-4">IP地址</dt>
+                        <dd class="col-sm-8">{{ log.ip_address }}</dd>
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    <dl class="row">
+                        <dt class="col-sm-4">操作结果</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge {% if log.result == '成功' %}bg-success{% else %}bg-danger{% endif %}">
+                                {{ log.result }}
+                            </span>
+                        </dd>
+                        
+                        {% if log.task_id %}
+                        <dt class="col-sm-4">相关任务</dt>
+                        <dd class="col-sm-8">
+                            <a href="{{ url_for('task_detail', task_id=log.task_id) }}">查看任务详情</a>
+                        </dd>
+                        {% endif %}
+                        
+                        {% if log.resource_id %}
+                        <dt class="col-sm-4">相关资源</dt>
+                        <dd class="col-sm-8">
+                            资源ID: {{ log.resource_id }}
+                            {% if related_resource %}
+                            ({{ related_resource.name }})
+                            {% endif %}
+                        </dd>
+                        {% endif %}
+                        
+                        {% if log.plan_id %}
+                        <dt class="col-sm-4">相关方案</dt>
+                        <dd class="col-sm-8">
+                            <a href="{{ url_for('plan_detail', plan_id=log.plan_id) }}">查看方案详情</a>
+                        </dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 操作详情 -->
+    <div class="card detail-card">
+        <div class="card-header">
+            <h5 class="mb-0">操作详情</h5>
+        </div>
+        <div class="card-body">
+            {% if log.operation_details|from_json %}
+                {% set details = log.operation_details|from_json %}
+                
+                <!-- 根据操作类型展示不同的详情 -->
+                {% if log.operation_type == '用户登录' or log.operation_type == '用户登出' %}
+                    <div class="alert alert-info">
+                        <p class="mb-0">
+                            <strong>用户名:</strong> {{ details.username }}
+                        </p>
+                    </div>
+                
+                {% elif log.operation_type == '创建任务' %}
+                    <div class="alert alert-success">
+                        <h6>任务信息</h6>
+                        <p><strong>任务名称:</strong> {{ details.task_name }}</p>
+                        <p><strong>任务类型:</strong> {{ details.task_type }}</p>
+                        <p><strong>位置:</strong> {{ details.location }}</p>
+                    </div>
+                
+                {% elif log.operation_type == '资源分配' %}
+                    <div class="alert alert-warning">
+                        <h6>资源分配信息</h6>
+                        <p><strong>任务名称:</strong> {{ details.task_name }}</p>
+                        {% if details.allocations %}
+                            <p><strong>分配资源列表:</strong></p>
+                            <ul>
+                                {% for allocation in details.allocations %}
+                                <li>{{ allocation.resource_name }} (ID: {{ allocation.resource_id }}) - 数量: {{ allocation.quantity }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                
+                {% elif log.operation_type == '生成审计报告' %}
+                    <div class="alert alert-info">
+                        <h6>审计报告信息</h6>
+                        <p><strong>报告名称:</strong> {{ details.report_name }}</p>
+                        <p><strong>报告类型:</strong> {{ details.report_type }}</p>
+                        <p><strong>报告ID:</strong> {{ details.report_id }}</p>
+                    </div>
+                
+                {% else %}
+                    <!-- 默认以JSON查看器显示详情 -->
+                    <h6 class="section-title">JSON数据</h6>
+                    <div class="json-viewer">
+                        <pre>{{ log.operation_details|tojson(indent=4) }}</pre>
+                    </div>
+                {% endif %}
+            {% else %}
+                <div class="alert alert-info">
+                    <p class="mb-0">该操作没有详细信息记录。</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- 相关信息 -->
+    {% if related_user or related_task or related_resource or related_plan %}
+    <div class="card detail-card mt-4">
+        <div class="card-header">
+            <h5 class="mb-0">相关对象信息</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                {% if related_user %}
+                <div class="col-md-6 mb-3">
+                    <h6 class="section-title">用户信息</h6>
+                    <dl class="row">
+                        <dt class="col-sm-4">用户名</dt>
+                        <dd class="col-sm-8">{{ related_user.username }}</dd>
+                        
+                        <dt class="col-sm-4">部门</dt>
+                        <dd class="col-sm-8">{{ related_user.department }}</dd>
+                        
+                        <dt class="col-sm-4">角色</dt>
+                        <dd class="col-sm-8">{{ related_user.role }}</dd>
+                    </dl>
+                </div>
+                {% endif %}
+                
+                {% if related_task %}
+                <div class="col-md-6 mb-3">
+                    <h6 class="section-title">任务信息</h6>
+                    <dl class="row">
+                        <dt class="col-sm-4">任务名称</dt>
+                        <dd class="col-sm-8">{{ related_task.name }}</dd>
+                        
+                        <dt class="col-sm-4">任务类型</dt>
+                        <dd class="col-sm-8">{{ related_task.task_type }}</dd>
+                        
+                        <dt class="col-sm-4">位置</dt>
+                        <dd class="col-sm-8">{{ related_task.location }}</dd>
+                        
+                        <dt class="col-sm-4">状态</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge {% if related_task.status == '已完成' %}bg-success{% elif related_task.status == '进行中' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                {{ related_task.status }}
+                            </span>
+                        </dd>
+                    </dl>
+                </div>
+                {% endif %}
+                
+                {% if related_resource %}
+                <div class="col-md-6 mb-3">
+                    <h6 class="section-title">资源信息</h6>
+                    <dl class="row">
+                        <dt class="col-sm-4">资源名称</dt>
+                        <dd class="col-sm-8">{{ related_resource.name }}</dd>
+                        
+                        <dt class="col-sm-4">资源类型</dt>
+                        <dd class="col-sm-8">{{ related_resource.resource_type }}</dd>
+                        
+                        <dt class="col-sm-4">专业技能</dt>
+                        <dd class="col-sm-8">{{ related_resource.specialty }}</dd>
+                        
+                        <dt class="col-sm-4">状态</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge {% if related_resource.status == '可用' %}bg-success{% else %}bg-secondary{% endif %}">
+                                {{ related_resource.status }}
+                            </span>
+                        </dd>
+                    </dl>
+                </div>
+                {% endif %}
+                
+                {% if related_plan %}
+                <div class="col-md-6 mb-3">
+                    <h6 class="section-title">方案信息</h6>
+                    <dl class="row">
+                        <dt class="col-sm-4">方案名称</dt>
+                        <dd class="col-sm-8">{{ related_plan.name }}</dd>
+                        
+                        <dt class="col-sm-4">方案状态</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge {% if related_plan.status == '已批准' %}bg-success{% elif related_plan.status == '已提交' %}bg-primary{% else %}bg-secondary{% endif %}">
+                                {{ related_plan.status }}
+                            </span>
+                        </dd>
+                        
+                        <dt class="col-sm-4">交通影响</dt>
+                        <dd class="col-sm-8">{{ related_plan.traffic_impact }}</dd>
+                        
+                        <dt class="col-sm-4">是否选定</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge {% if related_plan.is_selected %}bg-success{% else %}bg-light text-dark{% endif %}">
+                                {{ '是' if related_plan.is_selected else '否' }}
+                            </span>
+                        </dd>
+                    </dl>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 

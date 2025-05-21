@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}添加资源 - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>添加资源</h2>
+    <a href="{{ url_for('resources') }}" class="btn btn-secondary">返回资源列表</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="post">
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="name" class="form-label">资源名称</label>
+                    <input type="text" class="form-control" id="name" name="name" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="resource_type" class="form-label">资源类型</label>
+                    <select class="form-select" id="resource_type" name="resource_type" required>
+                        <option value="">选择类型</option>
+                        <option value="人员">人员</option>
+                        <option value="设备">设备</option>
+                        <option value="材料">材料</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="specialty" class="form-label">专业技能</label>
+                <input type="text" class="form-control" id="specialty" name="specialty" placeholder="例如：路面修补、电气维修等">
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="status" class="form-label">状态</label>
+                    <select class="form-select" id="status" name="status" required>
+                        <option value="可用">可用</option>
+                        <option value="使用中">使用中</option>
+                        <option value="维修中">维修中</option>
+                        <option value="不可用">不可用</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="location" class="form-label">位置</label>
+                    <input type="text" class="form-control" id="location" name="location" placeholder="例如：东莞养护中心">
+                </div>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="submit" class="btn btn-primary">添加资源</button>
+                <a href="{{ url_for('resources') }}" class="btn btn-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 根据资源类型调整表单
+        const resourceTypeSelect = document.getElementById('resource_type');
+        const specialtyInput = document.getElementById('specialty');
+        
+        resourceTypeSelect.addEventListener('change', function() {
+            const type = this.value;
+            
+            if (type === '人员') {
+                specialtyInput.placeholder = '例如：路面修补技师、电气维修工程师等';
+            } else if (type === '设备') {
+                specialtyInput.placeholder = '例如：压路机、铣刨机、灌缝机等';
+            } else if (type === '材料') {
+                specialtyInput.placeholder = '例如：沥青、水泥、防撞护栏等';
+            } else {
+                specialtyInput.placeholder = '例如：路面修补、电气维修等';
+            }
+        });
+    });
+</script>
+{% endblock %} 

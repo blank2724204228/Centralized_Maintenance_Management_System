@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}新建施工方案 - 高速公路集中养护智能管理系统{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>新建施工方案</h2>
+    <a href="{{ url_for('task_plans', task_id=task.id) }}" class="btn btn-secondary">返回方案列表</a>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">任务: {{ task.name }}</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>任务类型:</strong> {{ task.task_type }}</p>
+                <p><strong>位置:</strong> {{ task.location }}</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>开始时间:</strong> {{ task.start_time.strftime('%Y-%m-%d %H:%M') if task.start_time else '-' }}</p>
+                <p><strong>结束时间:</strong> {{ task.end_time.strftime('%Y-%m-%d %H:%M') if task.end_time else '-' }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">方案信息</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            <div class="row mb-3">
+                <div class="col-md-8">
+                    <label for="name" class="form-label">方案名称</label>
+                    <input type="text" class="form-control" id="name" name="name" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="template_id" class="form-label">选择模板(可选)</label>
+                    <select class="form-select" id="template_id" name="template_id">
+                        <option value="0">不使用模板</option>
+                        {% for template in templates %}
+                        <option value="{{ template.id }}">{{ template.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label for="description" class="form-label">方案描述</label>
+                <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+            </div>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <label for="traffic_impact" class="form-label">交通影响程度</label>
+                    <select class="form-select" id="traffic_impact" name="traffic_impact" required>
+                        <option value="">选择影响程度</option>
+                        <option value="低">低</option>
+                        <option value="中">中</option>
+                        <option value="高">高</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="estimated_duration" class="form-label">预计工期(小时)</label>
+                    <input type="number" class="form-control" id="estimated_duration" name="estimated_duration" min="1" required>
+                </div>
+            </div>
+            
+            <div class="alert alert-info" id="template-info" style="display: none;">
+                <h6>模板信息</h6>
+                <p id="template-description"></p>
+                <p><strong>预设步骤数:</strong> <span id="template-step-count">0</span></p>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <button type="submit" class="btn btn-primary">创建方案</button>
+                <a href="{{ url_for('task_plans', task_id=task.id) }}" class="btn btn-secondary">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const templateSelect = document.getElementById('template_id');
+        const templateInfo = document.getElementById('template-info');
+        const templateDescription = document.getElementById('template-description');
+        const templateStepCount = document.getElementById('template-step-count');
+        
+        // 模板数据
+        const templates = {
+            {% for template in templates %}
+            "{{ template.id }}": {
+                "name": "{{ template.name }}",
+                "description": "{{ template.description }}",
+                "steps": {{ template.steps_template|default('[]')|safe }}
+            },
+            {% endfor %}
+        };
+        
+        templateSelect.addEventListener('change', function() {
+            const templateId = this.value;
+            
+            if (templateId != "0" && templates[templateId]) {
+                const template = templates[templateId];
+                templateDescription.textContent = template.description || "无描述";
+                templateStepCount.textContent = template.steps ? template.steps.length : 0;
+                templateInfo.style.display = "block";
+                
+                // 预填充一些字段
+                document.getElementById('name').value = document.getElementById('name').value || `${template.name} - ${new Date().toLocaleDateString()}`;
+            } else {
+                templateInfo.style.display = "none";
+            }
+        });
+    });
+</script>
+{% endblock %} 
