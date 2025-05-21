@@ -80,7 +80,7 @@ highway-maintenance-system/
 4. 推送到分支 (`git push origin feature/amazing-feature`)
 5. 创建 Pull Request
 
-## 许可证
+目前使用的是mysql数据库
 
 [MIT](LICENSE) 
 =======
