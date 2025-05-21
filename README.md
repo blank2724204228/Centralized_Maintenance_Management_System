@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 高速公路集中养护智能管理系统
 
 这是一个基于Python Flask的前后端不分离系统，用于高速公路养护工作的智能化管理。系统旨在提高养护工作效率、质量和服务水平，通过集中养护管理赋能工作的数字化、自动化和智能化。
@@ -82,3 +83,7 @@ highway-maintenance-system/
 ## 许可证
 
 [MIT](LICENSE) 
+=======
+# Centralized_Maintenance_Management_System
+集中养护管理平台
+>>>>>>> 96ae409bb1c2ea9b671ecd2c5ae867d93e0c0d61
